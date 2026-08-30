@@ -1,13 +1,13 @@
-# Plumeria Store
+# Mesa Plumeria
 
 A local-pickup storefront for a plumeria plant business.
 
-- **`frontend/`** — React + TypeScript (Vite) site, organized by feature, where customers browse inventory and submit a "reserve for pickup" request.
-- **`backend/`** — ASP.NET Core 8 (C#) Minimal API behind admin login, with CRUD for inventory (including photos) and management of incoming pickup requests. No payment processing — pickup is arranged offline after a request comes in.
+- **`frontend/`** — React + TypeScript (Vite) site, organized by feature, where customers browse inventory, add items to a cart, and submit a pickup request for everything in it.
+- **`backend/`** — ASP.NET Core 10 (C#) Minimal API behind admin login, with CRUD for inventory (including photos) and management of incoming pickup requests. No payment processing — pickup is arranged offline after a request comes in.
 
 ## Prerequisites
 
-- .NET 8 SDK (backend)
+- .NET 10 SDK (backend)
 - Node.js 18+ and npm (frontend)
 
 ## Project layout
@@ -19,7 +19,7 @@ backend/
   tests/PlumeriaStore.Api.Tests/   xUnit tests (service-layer + real HTTP endpoint tests)
 frontend/
   src/features/               each feature owns its components, API hooks, and types
-    auth/, inventory/, reservations/
+    auth/, cart/, inventory/, reservations/
 ```
 
 ## Running the backend
@@ -77,5 +77,5 @@ Opens at `http://localhost:5173`. It talks to the backend via `VITE_API_BASE_URL
 
 ## Using it
 
-- Public site (`/`): browse inventory, filter by type/color/search, click an item to view photos and details, and submit a pickup request.
+- Public site (`/`): browse inventory, filter by type/color/size and max price, click an item to view photos and details and add it to your cart, then request pickup for everything in your cart from the cart panel.
 - Admin (`/admin/login`): log in with the admin credentials above, then manage inventory (add/edit/delete items, upload/remove photos) under `/admin/inventory` and view/update pickup requests under `/admin/reservations`.
