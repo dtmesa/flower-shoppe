@@ -7,7 +7,7 @@ A local-pickup storefront for a plumeria plant business.
 
 ## Prerequisites
 
-- .NET 8 SDK (backend)
+- .NET 10 SDK (backend)
 - Node.js 18+ and npm (frontend)
 
 ## Project layout
