@@ -1,0 +1,13 @@
+bin/
+obj/
+db/
+uploads/
+*.log
+backend-stdout.log
+backend-stderr.log
+backend.pid
+
+.vs/
+.idea/
+*.user
+.DS_Store
