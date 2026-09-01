@@ -13,8 +13,10 @@ public class PlumeriaDbContext : DbContext
 
     public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
     public DbSet<InventoryImage> InventoryImages => Set<InventoryImage>();
+    public DbSet<InventoryCategory> Categories => Set<InventoryCategory>();
     public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
     public DbSet<Reservation> Reservations => Set<Reservation>();
+    public DbSet<PickupRequest> PickupRequests => Set<PickupRequest>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -14,7 +14,13 @@ public class InventoryItem
     public string? Color { get; set; }
     public string? Size { get; set; }
     public decimal Price { get; set; }
-    public int QuantityAvailable { get; set; }
+
+    // How many the shop physically has. Confirmed pickup requests place a *hold* on some of these
+    // rather than decrementing this number (see Reservation.StockReserved), so the count customers
+    // see is QuantityTotal minus whatever is currently held. This only drops when a completed
+    // request permanently clears its stock, or when the admin edits it directly.
+    public int QuantityTotal { get; set; }
+
     public string? Description { get; set; }
     public List<InventoryImage> Images { get; set; } = new();
     public DateTime CreatedAt { get; set; }

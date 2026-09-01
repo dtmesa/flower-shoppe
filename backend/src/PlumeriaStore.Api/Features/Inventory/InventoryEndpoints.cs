@@ -34,5 +34,8 @@ public static class InventoryEndpoints
 
         group.MapDelete("/{id}/images/{imageId:int}", (string id, int imageId, InventoryService service) =>
             service.DeleteImageAsync(id, imageId));
+
+        group.MapPost("/{id}/images/{imageId:int}/primary", (string id, int imageId, InventoryService service) =>
+            service.SetPrimaryImageAsync(id, imageId));
     }
 }

@@ -6,9 +6,10 @@ interface ModalProps {
   onClose: () => void;
   children: ReactNode;
   wide?: boolean;
+  centeredTitle?: boolean;
 }
 
-export function Modal({ title, onClose, children, wide }: ModalProps) {
+export function Modal({ title, onClose, children, wide, centeredTitle }: ModalProps) {
   useEffect(() => {
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
@@ -23,7 +24,7 @@ export function Modal({ title, onClose, children, wide }: ModalProps) {
         className={`modal-panel${wide ? " modal-panel--wide" : ""}`}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="modal-header">
+        <div className={`modal-header${centeredTitle ? " modal-header--centered" : ""}`}>
           <h2>{title}</h2>
           <button type="button" className="modal-close" onClick={onClose} aria-label="Close">
             <CircleX size={24} strokeWidth={2} aria-hidden="true" />

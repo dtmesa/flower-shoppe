@@ -1,9 +1,6 @@
 import { ShoppingCart } from "lucide-react";
 import { useCart } from "./CartContext";
-
-function formatPrice(price: number): string {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(price);
-}
+import { formatPrice } from "../../lib/format";
 
 export function CartIcon() {
   const { itemCount, totalValue, openCart } = useCart();

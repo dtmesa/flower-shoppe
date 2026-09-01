@@ -1,4 +1,4 @@
-# Mesa Plumeria
+# Flower Shoppe
 
 A local-pickup storefront for a plumeria plant business.
 
@@ -18,8 +18,11 @@ backend/
   src/PlumeriaStore.Api/     the API itself, organized by feature (Auth/, Inventory/, Reservations/)
   tests/PlumeriaStore.Api.Tests/   xUnit tests (service-layer + real HTTP endpoint tests)
 frontend/
+  src/components/             shared UI primitives (Modal, FormError, ConfirmDialog, ...)
+  src/lib/                    api client and shared formatters
+  src/styles/                 tokens.css -> base.css -> components.css (imported in that order)
   src/features/               each feature owns its components, API hooks, and types
-    auth/, cart/, inventory/, reservations/
+    auth/, cart/, inventory/, reservations/, theme/
 ```
 
 ## Running the backend
@@ -40,12 +43,17 @@ dotnet test
 
 ### Admin login
 
-A single admin account is seeded (and re-synced) on every startup from configuration:
+A single admin account is created from configuration **the first time the app runs against an
+empty database**:
 
 | Setting | Default |
 |---|---|
 | `App:Admin:Username` | `admin` |
 | `App:Admin:Password` | `admin` |
+
+These are bootstrap values, not a permanent override. Once the account exists the seeder leaves
+it alone, so credentials changed in-app (Admin → Account) survive restarts. To get back to the
+configured values, delete the SQLite database file and let it re-seed.
 
 **Change the password before any real use.** Configuration follows the standard ASP.NET Core pattern: `appsettings.json` holds the defaults, and any value can be overridden with an environment variable using the `__` (double underscore) separator for nested keys, e.g.:
 
@@ -64,6 +72,23 @@ Other configurable settings (all optional, see `backend/src/PlumeriaStore.Api/ap
 | `App:Jwt:Secret` | Signing key for admin session tokens | dev-only default — **set this in production** |
 | `App:Jwt:ExpirationMinutes` | Admin token lifetime | `720` (12h) |
 | `App:Cors:AllowedOrigin` | Allowed frontend origin | `http://localhost:5173` |
+| `App:Email:Region` | AWS region used for the SES client | `us-west-2` |
+
+### Email notifications
+
+Copy `backend/.env.example` to `backend/.env` and fill in the values below to get an email at
+`EMAIL_FROM_ADDRESS` every time a customer submits a pickup request, sent via AWS SES. `backend/.env`
+is git-ignored — it's loaded automatically at startup (via `DotNetEnv`) and isn't committed.
+
+| Key | Purpose |
+|---|---|
+| `EMAIL_SENDER` | Reserved for selecting a provider later; only `"ses"` is implemented today |
+| `EMAIL_FROM_ADDRESS` | Verified SES sender **and** the notification recipient (send-to-self) |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | Credentials for an IAM user with `ses:SendEmail` |
+
+While the SES account is in sandbox mode, both `EMAIL_FROM_ADDRESS` and any recipient must be
+verified identities in the SES console, or sends will fail (silently, from the customer's
+perspective — a failed notification is logged but never blocks the pickup request itself).
 
 ## Running the frontend
 
@@ -78,4 +103,33 @@ Opens at `http://localhost:5173`. It talks to the backend via `VITE_API_BASE_URL
 ## Using it
 
 - Public site (`/`): browse inventory, filter by type/color/size and max price, click an item to view photos and details and add it to your cart, then request pickup for everything in your cart from the cart panel.
-- Admin (`/admin/login`): log in with the admin credentials above, then manage inventory (add/edit/delete items, upload/remove photos) under `/admin/inventory` and view/update pickup requests under `/admin/reservations`.
+- Admin (`/admin/login`): log in with the admin credentials above, then use the dashboard tabs:
+  - **Inventory** (`/admin/inventory`) — add/edit/delete items, upload photos and pick which one is the thumbnail.
+  - **Pickup Requests** (`/admin/reservations`) — view each request's items and notes, move it through its status, and complete it (either permanently clearing the reserved stock or returning it).
+  - **Categories** (`/admin/categories`) — edit the Type/Color/Size options customers filter by. Each carries a one-letter code, and an item's ID tag is those three codes concatenated (e.g. Rooted Plant + Yellow/White + Medium → `RYM`).
+  - **Account** (`/admin/account`) — change the admin username and password.
+- Light/dark theme: the toggle in the bottom-left corner overrides the system preference and is remembered per browser.
+
+An item's ID tag is derived from its Type/Color/Size, so those three are fixed once an item is
+created — creating a second item with the same combination is rejected, with a prompt to raise
+the existing item's quantity instead.
+
+### How stock is counted
+
+Each item stores one number, **total** — the units physically on hand. Confirming a pickup request
+places a *hold* on some of them rather than decrementing that number:
+
+| | Meaning | Where it shows |
+|---|---|---|
+| Total | Units on hand, including held ones | Admin inventory table; the field the admin edits |
+| Reserved | Units held by confirmed, not-yet-completed requests | Admin inventory table |
+| Available | Total − reserved | What customers see; server-computed |
+
+Items with zero available are hidden from the storefront, and a customer can never add more than
+the available count to their cart — enforced in the UI and re-checked on the server.
+
+Holds are released when a request leaves `CONFIRMED`. Completing a request resolves its hold for
+good: **Clear Stock** subtracts the units from the total (the customer took them), while
+**Restore Stock** just releases the hold and puts them back on sale. The total is only ever
+reduced by a completed clear or by the admin editing it directly — and it can't be set below
+what's currently reserved.

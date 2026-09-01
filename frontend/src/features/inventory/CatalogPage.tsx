@@ -1,13 +1,15 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import type { InventoryItem } from "./types";
 import { useInventory } from "./inventoryApi";
 import { extractErrorMessage } from "../../lib/apiClient";
 import { FilterSidebar } from "./FilterSidebar";
 import { InventoryCard } from "./InventoryCard";
 import { InventoryDetailModal } from "./InventoryDetailModal";
+import bannerImage from "../../assets/banner.jpg";
 
 export function CatalogPage() {
-  const { items, error, isLoading } = useInventory();
+  const { items: allItems, error, isLoading } = useInventory();
+  const items = useMemo(() => allItems.filter((item) => item.quantityAvailable > 0), [allItems]);
 
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
@@ -46,11 +48,16 @@ export function CatalogPage() {
 
   return (
     <>
-    <div className="page">
-      <div className="page-intro">
-        <h1>Plumeria for Local Pickup</h1>
-        <p>Browse what&apos;s currently available. Add items to your cart and request them for pickup.</p>
+    <div className="banner">
+      <img src={bannerImage} alt="" className="banner-image" />
+      <div className="banner-overlay">
+        <h1>Plumeria, Grown with Care</h1>
+        <p>
+          Browse what&apos;s in bloom and reserve your favorites for local pickup in Orange County, CA.
+        </p>
       </div>
+    </div>
+    <div className="page">
 
       <div className="catalog-layout">
         {items.length > 0 && (
@@ -68,7 +75,6 @@ export function CatalogPage() {
         )}
 
         <div className="catalog-content">
-          {isLoading && <p className="state-message">Loading inventory...</p>}
           {error && <p className="state-message state-message--error">{extractErrorMessage(error)}</p>}
           {!isLoading && !error && items.length === 0 && (
             <p className="state-message">No plumeria available right now — check back soon!</p>
@@ -92,12 +98,20 @@ export function CatalogPage() {
   );
 }
 
+const CONTACT_TITLE = "Contact Us";
+
 function ContactFooter() {
   return (
-    <footer className="contact-footer">
+    <footer className="contact-footer" id="contact">
       <div className="contact-footer-inner">
-        <h2>Contact Us</h2>
-        <p>Have a question about an order or availability? Reach out anytime.</p>
+        <h2 className="contact-footer-title">
+          {CONTACT_TITLE.split("").map((char, index) => (
+            <span key={index} className="wave-letter" style={{ "--i": index } as CSSProperties}>
+              {char === " " ? " " : char}
+            </span>
+          ))}
+        </h2>
+        <p>Have a question about an order or availability?</p>
         <div className="contact-footer-details">
           <span>placeholder@flowershoppe.example</span>
           <span>(123) 456-7890</span>

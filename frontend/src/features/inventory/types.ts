@@ -1,11 +1,8 @@
-export const TYPE_OPTIONS = ["Cutting", "Rooted Plant"] as const;
-export const COLOR_OPTIONS = ["Red", "Pink", "Yellow/White"] as const;
-export const SIZE_OPTIONS = ["Small", "Medium", "Large"] as const;
-
 export interface InventoryImage {
   id: number;
   url: string;
   sortOrder: number;
+  isPrimary: boolean;
 }
 
 export interface InventoryItem {
@@ -14,6 +11,11 @@ export interface InventoryItem {
   color: string | null;
   size: string | null;
   price: number;
+  /** Units physically on hand, including any held by confirmed pickup requests. */
+  quantityTotal: number;
+  /** Units held by confirmed-but-not-yet-completed pickup requests. */
+  quantityReserved: number;
+  /** total - reserved. What a customer can actually request; server-computed. */
   quantityAvailable: number;
   description: string | null;
   images: InventoryImage[];
@@ -21,11 +23,17 @@ export interface InventoryItem {
   updatedAt: string;
 }
 
-export interface InventoryItemInput {
+export interface InventoryItemCreateInput {
   type: string;
   color: string;
   size: string;
   price: number;
-  quantityAvailable: number;
+  quantityTotal: number;
+  description: string;
+}
+
+export interface InventoryItemUpdateInput {
+  price: number;
+  quantityTotal: number;
   description: string;
 }

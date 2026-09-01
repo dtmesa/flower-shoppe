@@ -1,14 +1,7 @@
 import type { CSSProperties } from "react";
 import { Check } from "lucide-react";
-import { COLOR_OPTIONS, SIZE_OPTIONS, TYPE_OPTIONS } from "./types";
-
-function formatPrice(price: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(price);
-}
+import { useCategories } from "./categoriesApi";
+import { formatWholeDollars } from "../../lib/format";
 
 interface FilterCheckboxOptionProps {
   label: string;
@@ -51,40 +44,42 @@ export function FilterSidebar({
   priceLimit,
   onPriceLimitChange,
 }: FilterSidebarProps) {
+  const { types, colors, sizes } = useCategories();
+
   return (
     <aside className="filter-sidebar">
       <div className="filter-section">
         <h3>Type</h3>
-        {TYPE_OPTIONS.map((type) => (
+        {types.map((type) => (
           <FilterCheckboxOption
-            key={type}
-            label={type}
-            checked={selectedTypes.includes(type)}
-            onChange={() => onToggleType(type)}
+            key={type.id}
+            label={type.name}
+            checked={selectedTypes.includes(type.name)}
+            onChange={() => onToggleType(type.name)}
           />
         ))}
       </div>
 
       <div className="filter-section">
         <h3>Color</h3>
-        {COLOR_OPTIONS.map((color) => (
+        {colors.map((color) => (
           <FilterCheckboxOption
-            key={color}
-            label={color}
-            checked={selectedColors.includes(color)}
-            onChange={() => onToggleColor(color)}
+            key={color.id}
+            label={color.name}
+            checked={selectedColors.includes(color.name)}
+            onChange={() => onToggleColor(color.name)}
           />
         ))}
       </div>
 
       <div className="filter-section">
         <h3>Size</h3>
-        {SIZE_OPTIONS.map((size) => (
+        {sizes.map((size) => (
           <FilterCheckboxOption
-            key={size}
-            label={size}
-            checked={selectedSizes.includes(size)}
-            onChange={() => onToggleSize(size)}
+            key={size.id}
+            label={size.name}
+            checked={selectedSizes.includes(size.name)}
+            onChange={() => onToggleSize(size.name)}
           />
         ))}
       </div>
@@ -105,7 +100,7 @@ export function FilterSidebar({
         <div className="filter-slider-range">
           <span>$0</span>
           <span>
-            {priceLimit >= priceCeiling ? <span className="filter-slider-infinity">∞</span> : formatPrice(priceLimit)}
+            {priceLimit >= priceCeiling ? <span className="filter-slider-infinity">∞</span> : formatWholeDollars(priceLimit)}
           </span>
         </div>
       </div>
