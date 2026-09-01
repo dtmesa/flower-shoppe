@@ -29,18 +29,20 @@ $colorSwatch = @{
     "Yellow/White" = "#F4D35E"
 }
 
-# id mimics the physical ID tag attached to each plant.
+# No id here - the API derives it from type+color+size (e.g. "RYM") and rejects a second item
+# with the same combo, so every row below must be a distinct Type/Color/Size combination.
+# $item.id is filled in after creation, once the auto-generated tag is known.
 $items = @(
-    @{ id = "PLM-0001"; type = "Rooted Plant"; color = "Yellow/White"; size = "Medium"; price = 24.99; qty = 8;  desc = "Fragrant classic yellow-and-white plumeria, easy to grow."; photo = $true }
-    @{ id = "PLM-0002"; type = "Cutting"; color = "Red"; size = "Small"; price = 12.50; qty = 15; desc = "Deep red blooms with a spicy-sweet fragrance."; photo = $true }
-    @{ id = "PLM-0003"; type = "Rooted Plant"; color = "Yellow/White"; size = "Large"; price = 34.00; qty = 3;  desc = "Bold golden-yellow flowers on a vigorous grower."; photo = $true }
-    @{ id = "PLM-0004"; type = "Rooted Plant"; color = "Pink"; size = "Medium"; price = 28.75; qty = 0;  desc = "Swirled pink and white petals, currently sold out."; photo = $true }
-    @{ id = "PLM-0005"; type = "Cutting"; color = "Yellow/White"; size = "Small"; price = 9.99;  qty = 20; desc = "The classic backyard plumeria - reliable bloomer."; photo = $true }
-    @{ id = "PLM-0006"; type = "Rooted Plant"; color = "Pink"; size = "Large"; price = 45.00; qty = 5;  desc = "Rich rose-pink blooms, a favorite for leis."; photo = $true }
-    @{ id = "PLM-0007"; type = "Rooted Plant"; color = "Red"; size = "Medium"; price = 32.50; qty = 6;  desc = "Vivid true-red flowers that hold their color well."; photo = $true }
-    @{ id = "PLM-0008"; type = "Cutting"; color = "Pink"; size = "Small"; price = 6.00;  qty = 25; desc = "Compact dwarf variety, soft pink blossoms."; photo = $true }
-    @{ id = "PLM-0009"; type = "Cutting"; color = "Red"; size = "Large"; price = 18.25; qty = 4;  desc = "Ruffled deep red petals with a velvety texture."; photo = $true }
-    @{ id = "PLM-0010"; type = "Rooted Plant"; color = "Yellow/White"; size = "Small"; price = 15.00; qty = 10; desc = "Compact grower, no photo yet - fresh cutting just arrived."; photo = $false }
+    @{ type = "Rooted Plant"; color = "Yellow/White"; size = "Medium"; price = 24.99; qty = 8;  desc = "Fragrant classic yellow-and-white plumeria, easy to grow."; photo = $true }
+    @{ type = "Cutting"; color = "Red"; size = "Small"; price = 12.50; qty = 15; desc = "Deep red blooms with a spicy-sweet fragrance."; photo = $true }
+    @{ type = "Rooted Plant"; color = "Yellow/White"; size = "Large"; price = 34.00; qty = 3;  desc = "Bold golden-yellow flowers on a vigorous grower."; photo = $true }
+    @{ type = "Rooted Plant"; color = "Pink"; size = "Medium"; price = 28.75; qty = 0;  desc = "Swirled pink and white petals, currently sold out."; photo = $true }
+    @{ type = "Cutting"; color = "Yellow/White"; size = "Small"; price = 9.99;  qty = 20; desc = "The classic backyard plumeria - reliable bloomer."; photo = $true }
+    @{ type = "Rooted Plant"; color = "Pink"; size = "Large"; price = 45.00; qty = 5;  desc = "Rich rose-pink blooms, a favorite for leis."; photo = $true }
+    @{ type = "Rooted Plant"; color = "Red"; size = "Medium"; price = 32.50; qty = 6;  desc = "Vivid true-red flowers that hold their color well."; photo = $true }
+    @{ type = "Cutting"; color = "Pink"; size = "Small"; price = 6.00;  qty = 25; desc = "Compact dwarf variety, soft pink blossoms."; photo = $true }
+    @{ type = "Cutting"; color = "Red"; size = "Large"; price = 18.25; qty = 4;  desc = "Ruffled deep red petals with a velvety texture."; photo = $true }
+    @{ type = "Rooted Plant"; color = "Yellow/White"; size = "Small"; price = 15.00; qty = 10; desc = "Compact grower, no photo yet - fresh cutting just arrived."; photo = $false }
 )
 
 $tempDir = Join-Path $env:TEMP "plumeria-seed-images"
@@ -48,17 +50,17 @@ New-Item -ItemType Directory -Force -Path $tempDir | Out-Null
 
 foreach ($item in $items) {
     $body = @{
-        id = $item.id
         type = $item.type
         color = $item.color
         size = $item.size
         price = $item.price
-        quantityAvailable = $item.qty
+        quantityTotal = $item.qty
         description = $item.desc
     } | ConvertTo-Json
 
     $created = Invoke-RestMethod -Uri "$apiBase/api/inventory" -Method Post -ContentType "application/json" -Headers $headers -Body $body
-    Write-Output "Created: $($created.id)"
+    $item.id = $created.id
+    Write-Output "Created: $($created.id) ($($item.type) / $($item.color) / $($item.size))"
 
     if ($item.photo) {
         $pngPath = Join-Path $tempDir "$($created.id).png"
@@ -82,25 +84,29 @@ foreach ($item in $items) {
 Remove-Item -Recurse -Force $tempDir -ErrorAction SilentlyContinue
 
 # A few sample pickup requests so the admin Reservations tab has content too - covering
-# email-only, phone-only, and both, since a reservation now requires at least one.
-$reservations = @(
-    @{ itemId = "PLM-0001"; name = "Jane Customer"; phone = $null; email = "jane@example.com"; qty = 2; notes = "Can I pick up this weekend?" }
-    @{ itemId = "PLM-0003"; name = "Mike Rivera"; phone = "555-0142"; email = $null; qty = 1; notes = "" }
-    @{ itemId = "PLM-0006"; name = "Priya Shah"; phone = "555-0198"; email = "priya.shah@example.com"; qty = 3; notes = "Need them for a wedding on the 14th." }
+# email-only, phone-only, and both, since a request now requires at least one. Referenced by array
+# index rather than a fixed ID string, since the actual ID is only known after creation. Priya's
+# request bundles two different items under one submission, exercising the grouped-cart shape.
+$pickupRequests = @(
+    @{ name = "Jane Customer"; phone = $null; email = "jane@example.com"; notes = "Can I pick up this weekend?"; items = @(@{ itemId = $items[0].id; qty = 2 }) }
+    @{ name = "Mike Rivera"; phone = "(555) 014-2000"; email = $null; notes = ""; items = @(@{ itemId = $items[2].id; qty = 1 }) }
+    @{ name = "Priya Shah"; phone = "(555) 019-8000"; email = "priya.shah@example.com"; notes = "Need them for a wedding on the 14th."; items = @(@{ itemId = $items[5].id; qty = 3 }, @{ itemId = $items[6].id; qty = 2 }) }
 )
 
-foreach ($res in $reservations) {
+foreach ($req in $pickupRequests) {
     $body = @{
-        inventoryItemId = $res.itemId
-        customerName = $res.name
-        customerPhone = $res.phone
-        customerEmail = $res.email
-        quantityRequested = $res.qty
-        notes = $res.notes
-    } | ConvertTo-Json
+        customerName = $req.name
+        customerPhone = $req.phone
+        customerEmail = $req.email
+        notes = $req.notes
+        # @(...) forces an array even when there's only one line item - PowerShell's pipeline
+        # otherwise unwraps a single ForEach-Object result to a bare object, which would serialize
+        # as a JSON object instead of a one-element array and fail model binding on the backend.
+        items = @($req.items | ForEach-Object { @{ inventoryItemId = $_.itemId; quantityRequested = $_.qty } })
+    } | ConvertTo-Json -Depth 5
     Invoke-RestMethod -Uri "$apiBase/api/reservations" -Method Post -ContentType "application/json" -Body $body | Out-Null
-    Write-Output "Reservation created for item $($res.itemId) ($($res.name))"
+    Write-Output "Pickup request created for $($req.name) ($($req.items.Count) item(s))"
 }
 
 Write-Output ""
-Write-Output "Done. $($items.Count) inventory items and $($reservations.Count) pickup requests seeded."
+Write-Output "Done. $($items.Count) inventory items and $($pickupRequests.Count) pickup requests seeded."

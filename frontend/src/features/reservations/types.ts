@@ -1,23 +1,33 @@
-export type ReservationStatus = "PENDING" | "CONTACTED" | "COMPLETED" | "CANCELLED";
+export type ReservationStatus = "NEW" | "CONTACTED" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
 
-export interface Reservation {
+export interface ReservationLine {
   id: number;
   inventoryItemId: string | null;
   itemSnapshot: string;
+  quantityRequested: number;
+}
+
+export interface PickupRequest {
+  id: number;
   customerName: string;
   customerPhone: string | null;
   customerEmail: string | null;
-  quantityRequested: number;
   notes: string | null;
   status: ReservationStatus;
+  stockReserved: boolean;
   createdAt: string;
+  items: ReservationLine[];
 }
 
-export interface ReservationInput {
+export interface PickupRequestLineItemInput {
   inventoryItemId: string;
+  quantityRequested: number;
+}
+
+export interface PickupRequestInput {
   customerName: string;
   customerPhone: string;
   customerEmail: string;
-  quantityRequested: number;
   notes: string;
+  items: PickupRequestLineItemInput[];
 }

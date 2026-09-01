@@ -18,6 +18,11 @@ public sealed class PlumeriaApiFactory : WebApplicationFactory<Program>
     {
         builder.UseSetting("ConnectionStrings:Default", $"Data Source={_dbPath}");
         builder.UseSetting("App:Upload:Directory", _uploadDir);
+
+        // Overrides whatever backend/.env provides (Program.cs loads it unconditionally) so
+        // integration tests never attempt a real SES call - EmailNotificationService already
+        // treats a blank FromAddress as "notifications disabled" and skips without erroring.
+        builder.UseSetting("EMAIL_FROM_ADDRESS", "");
     }
 
     protected override void Dispose(bool disposing)

@@ -1,23 +1,21 @@
+import { Flower } from "lucide-react";
 import type { InventoryItem } from "./types";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
-
-function formatPrice(price: number): string {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(price);
-}
+import { getCoverImage } from "./imageHelpers";
+import { uploadUrl } from "../../lib/apiClient";
+import { formatPrice } from "../../lib/format";
 
 export function InventoryCard({ item, onSelect }: { item: InventoryItem; onSelect: () => void }) {
-  const coverImage = item.images[0];
+  const coverImage = getCoverImage(item);
   const inStock = item.quantityAvailable > 0;
 
   return (
     <button type="button" className="inventory-card" onClick={onSelect}>
       <div className="inventory-card-image">
         {coverImage ? (
-          <img src={`${API_BASE}${coverImage.url}`} alt={item.type} loading="lazy" />
+          <img src={uploadUrl(coverImage.url)} alt={item.type} loading="lazy" />
         ) : (
           <div className="inventory-card-image-placeholder" aria-hidden="true">
-            🌸
+            <Flower size={40} strokeWidth={1.5} />
           </div>
         )}
         <span className={`stock-badge ${inStock ? "stock-badge--in" : "stock-badge--out"}`}>
@@ -25,9 +23,9 @@ export function InventoryCard({ item, onSelect }: { item: InventoryItem; onSelec
         </span>
       </div>
       <div className="inventory-card-body">
-        <h3>{item.type}</h3>
+        <h3>{item.color}</h3>
         <p className="inventory-card-meta">
-          {[item.color, item.size].filter(Boolean).join(" · ")}
+          {[item.type, item.size].filter(Boolean).join(" · ")}
         </p>
         <p className="inventory-card-price">{formatPrice(item.price)}</p>
       </div>

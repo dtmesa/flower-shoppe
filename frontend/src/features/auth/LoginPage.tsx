@@ -1,7 +1,10 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "./AuthContext";
+import { FormError, useDismissingError } from "../../components/FormError";
 import { extractErrorMessage } from "../../lib/apiClient";
+import { shakeFields } from "../../lib/shake";
 
 export function LoginPage() {
   const { isAuthenticated, login } = useAuth();
@@ -10,8 +13,11 @@ export function LoginPage() {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useDismissingError();
+  const usernameInputRef = useRef<HTMLInputElement>(null);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
 
   if (isAuthenticated) {
     const redirectTo = (location.state as { from?: string } | null)?.from ?? "/admin";
@@ -21,6 +27,16 @@ export function LoginPage() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+
+    if (!username.trim() || !password) {
+      setError("Enter your username and password.");
+      shakeFields(
+        username.trim() ? null : usernameInputRef.current,
+        password ? null : passwordInputRef.current,
+      );
+      return;
+    }
+
     setSubmitting(true);
     try {
       await login(username, password);
@@ -35,13 +51,12 @@ export function LoginPage() {
   return (
     <div className="page page--narrow">
       <h1>Admin Login</h1>
-      <form className="form" onSubmit={handleSubmit}>
-        {error && <p className="form-error">{error}</p>}
+      <form className="form" onSubmit={handleSubmit} noValidate>
         <label>
           Username
           <input
             type="text"
-            required
+            ref={usernameInputRef}
             autoFocus
             value={username}
             onChange={(event) => setUsername(event.target.value)}
@@ -49,16 +64,28 @@ export function LoginPage() {
         </label>
         <label>
           Password
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
+          <div className="password-field">
+            <input
+              type={showPassword ? "text" : "password"}
+              ref={passwordInputRef}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+            <button
+              type="button"
+              className="password-toggle"
+              onClick={() => setShowPassword((prev) => !prev)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              <Eye size={18} className={`password-toggle-icon${showPassword ? "" : " password-toggle-icon--active"}`} aria-hidden="true" />
+              <EyeOff size={18} className={`password-toggle-icon${showPassword ? " password-toggle-icon--active" : ""}`} aria-hidden="true" />
+            </button>
+          </div>
         </label>
         <button type="submit" className="btn btn-primary" disabled={submitting}>
-          {submitting ? "Logging in..." : "Log in"}
+          {submitting ? "Logging in..." : "Login"}
         </button>
+        <FormError message={error} reserveSpace tight />
       </form>
     </div>
   );

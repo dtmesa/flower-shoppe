@@ -1,20 +1,28 @@
 import useSWR from "swr";
 import { apiClient, fetcher } from "../../lib/apiClient";
-import type { InventoryItem, InventoryItemInput } from "./types";
+import type { InventoryItem, InventoryItemCreateInput, InventoryItemUpdateInput } from "./types";
 
 const INVENTORY_KEY = "/api/inventory";
 
-export function useInventory() {
-  const { data, error, isLoading, mutate } = useSWR<InventoryItem[]>(INVENTORY_KEY, fetcher);
+/**
+ * @param enabled pass false to skip the request entirely (SWR treats a null key as "don't
+ *   fetch"). Used by the cart, which is mounted app-wide but has nothing to show on admin
+ *   routes and shouldn't pull the whole catalog there.
+ */
+export function useInventory(enabled = true) {
+  const { data, error, isLoading, mutate } = useSWR<InventoryItem[]>(
+    enabled ? INVENTORY_KEY : null,
+    fetcher,
+  );
   return { items: data ?? [], error, isLoading, refresh: mutate };
 }
 
-export async function createInventoryItem(id: string, input: InventoryItemInput): Promise<InventoryItem> {
-  const { data } = await apiClient.post<InventoryItem>(INVENTORY_KEY, { id, ...input });
+export async function createInventoryItem(input: InventoryItemCreateInput): Promise<InventoryItem> {
+  const { data } = await apiClient.post<InventoryItem>(INVENTORY_KEY, input);
   return data;
 }
 
-export async function updateInventoryItem(id: string, input: InventoryItemInput): Promise<InventoryItem> {
+export async function updateInventoryItem(id: string, input: InventoryItemUpdateInput): Promise<InventoryItem> {
   const { data } = await apiClient.put<InventoryItem>(`${INVENTORY_KEY}/${id}`, input);
   return data;
 }
@@ -34,5 +42,10 @@ export async function uploadInventoryImage(id: string, file: File): Promise<Inve
 
 export async function deleteInventoryImage(itemId: string, imageId: number): Promise<InventoryItem> {
   const { data } = await apiClient.delete<InventoryItem>(`${INVENTORY_KEY}/${itemId}/images/${imageId}`);
+  return data;
+}
+
+export async function setPrimaryInventoryImage(itemId: string, imageId: number): Promise<InventoryItem> {
+  const { data } = await apiClient.post<InventoryItem>(`${INVENTORY_KEY}/${itemId}/images/${imageId}/primary`);
   return data;
 }

@@ -8,8 +8,8 @@ public static class ReservationEndpoints
     {
         var group = app.MapGroup("/api/reservations");
 
-        group.MapPost("/", (ReservationCreateRequest request, ReservationService service) => service.CreateAsync(request))
-            .AddEndpointFilter<ValidationFilter<ReservationCreateRequest>>()
+        group.MapPost("/", (PickupRequestCreateRequest request, ReservationService service) => service.CreateAsync(request))
+            .AddEndpointFilter<ValidationFilter<PickupRequestCreateRequest>>()
             .AllowAnonymous();
 
         group.MapGet("/", (ReservationService service) => service.FindAllAsync());
@@ -17,6 +17,9 @@ public static class ReservationEndpoints
         group.MapPatch("/{id:int}/status", (int id, ReservationStatusUpdateRequest request, ReservationService service) =>
                 service.UpdateStatusAsync(id, request.Status))
             .AddEndpointFilter<ValidationFilter<ReservationStatusUpdateRequest>>();
+
+        group.MapPost("/{id:int}/complete", (int id, ReservationCompleteRequest request, ReservationService service) =>
+            service.CompleteAsync(id, request.PermanentlyClear));
 
         group.MapDelete("/{id:int}", async (int id, ReservationService service) =>
         {

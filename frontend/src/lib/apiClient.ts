@@ -2,9 +2,18 @@ import axios from "axios";
 
 const TOKEN_STORAGE_KEY = "plumeria_admin_token";
 
+/** Origin the API (and the /uploads it serves) lives on. Exported so image `src` attributes
+ *  resolve against the same base the client does, instead of re-reading the env var per file. */
+export const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: API_BASE,
 });
+
+/** Absolute URL for a server-relative upload path (e.g. "/uploads/abc.png"). */
+export function uploadUrl(path: string): string {
+  return `${API_BASE}${path}`;
+}
 
 export function getStoredToken(): string | null {
   return sessionStorage.getItem(TOKEN_STORAGE_KEY);

@@ -1,8 +1,8 @@
+import { Flower } from "lucide-react";
 import type { InventoryItem } from "../types";
-
-function formatPrice(price: number): string {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(price);
-}
+import { getCoverImage } from "../imageHelpers";
+import { uploadUrl } from "../../../lib/apiClient";
+import { formatPrice } from "../../../lib/format";
 
 interface InventoryTableProps {
   items: InventoryItem[];
@@ -17,6 +17,7 @@ export function InventoryTable({ items, onEdit, onDelete }: InventoryTableProps)
 
   return (
     <div className="table-wrapper">
+      <div className="table-scroll">
       <table>
         <thead>
           <tr>
@@ -26,23 +27,25 @@ export function InventoryTable({ items, onEdit, onDelete }: InventoryTableProps)
             <th>Color</th>
             <th>Size</th>
             <th>Price</th>
-            <th>Qty</th>
+            <th>Total</th>
+            <th>Reserved</th>
+            <th>Available</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
-          {items.map((item) => (
+          {items.map((item) => {
+            // Must match what the storefront shows for the same item - the admin's chosen
+            // thumbnail, not simply the first-uploaded photo.
+            const coverImage = getCoverImage(item);
+            return (
             <tr key={item.id}>
               <td>
-                {item.images[0] ? (
-                  <img
-                    className="table-thumb"
-                    src={`${import.meta.env.VITE_API_BASE_URL}${item.images[0].url}`}
-                    alt=""
-                  />
+                {coverImage ? (
+                  <img className="table-thumb" src={uploadUrl(coverImage.url)} alt="" />
                 ) : (
                   <span className="table-thumb table-thumb--empty" aria-hidden="true">
-                    🌸
+                    <Flower size={20} strokeWidth={1.5} />
                   </span>
                 )}
               </td>
@@ -51,19 +54,31 @@ export function InventoryTable({ items, onEdit, onDelete }: InventoryTableProps)
               <td>{item.color || "—"}</td>
               <td>{item.size || "—"}</td>
               <td>{formatPrice(item.price)}</td>
-              <td>{item.quantityAvailable}</td>
-              <td className="table-actions">
-                <button type="button" className="btn btn-secondary btn-small" onClick={() => onEdit(item)}>
-                  Edit
-                </button>
-                <button type="button" className="btn btn-danger btn-small" onClick={() => onDelete(item)}>
-                  Delete
-                </button>
+              <td>{item.quantityTotal}</td>
+              {/* Held by confirmed pickup requests. Dimmed at zero so rows with an actual
+                  hold stand out at a glance. */}
+              <td className={item.quantityReserved > 0 ? "qty-reserved" : "qty-zero"}>
+                {item.quantityReserved}
+              </td>
+              <td className={item.quantityAvailable === 0 ? "qty-zero" : undefined}>
+                {item.quantityAvailable}
+              </td>
+              <td>
+                <div className="table-actions">
+                  <button type="button" className="btn btn-secondary btn-small" onClick={() => onEdit(item)}>
+                    Edit
+                  </button>
+                  <button type="button" className="btn btn-danger btn-small" onClick={() => onDelete(item)}>
+                    Delete
+                  </button>
+                </div>
               </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

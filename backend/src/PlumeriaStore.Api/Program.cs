@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json.Serialization;
+using Amazon.SimpleEmailV2;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Data.Sqlite;
@@ -12,7 +13,14 @@ using PlumeriaStore.Api.Common.Errors;
 using PlumeriaStore.Api.Common.Options;
 using PlumeriaStore.Api.Features.Auth;
 using PlumeriaStore.Api.Features.Inventory;
+using PlumeriaStore.Api.Features.Notifications;
 using PlumeriaStore.Api.Features.Reservations;
+
+// Loads EMAIL_*/AWS_* secrets from backend/.env into the process environment (no-op if the file
+// isn't there, e.g. in a deployed environment where they're set directly) - picked up below both
+// by our own config reads and by the AWS SDK's default credential/region resolution, which already
+// checks AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY/AWS_REGION env vars on its own.
+DotNetEnv.Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,13 +34,34 @@ builder.Services.Configure<UploadOptions>(builder.Configuration.GetSection(Uploa
 builder.Services.Configure<AdminSeedOptions>(builder.Configuration.GetSection(AdminSeedOptions.SectionName));
 builder.Services.Configure<CorsOptions>(builder.Configuration.GetSection(CorsOptions.SectionName));
 
+// EMAIL_FROM_ADDRESS/App:Email:Region are flat/ad-hoc keys rather than a nested App: section
+// (the former comes straight from backend/.env), so this is bound by hand instead of via
+// GetSection().
+builder.Services.Configure<EmailOptions>(options =>
+{
+    options.FromAddress = builder.Configuration["EMAIL_FROM_ADDRESS"] ?? string.Empty;
+    options.Region = builder.Configuration["App:Email:Region"] ?? new EmailOptions().Region;
+});
+
 builder.Services.AddDbContext<PlumeriaDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
 
 builder.Services.AddSingleton<JwtTokenService>();
 builder.Services.AddSingleton<FileStorageService>();
 builder.Services.AddScoped<InventoryService>();
+builder.Services.AddScoped<CategoryService>();
 builder.Services.AddScoped<ReservationService>();
+
+// Credentials come from AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY env vars (loaded above from
+// backend/.env) via the SDK's own default resolution chain; region is passed explicitly from
+// EmailOptions so startup doesn't depend on an AWS_REGION env var or ~/.aws/config existing too.
+builder.Services.AddSingleton<IAmazonSimpleEmailServiceV2>(provider =>
+{
+    var region = provider.GetRequiredService<IOptions<EmailOptions>>().Value.Region;
+    return new AmazonSimpleEmailServiceV2Client(Amazon.RegionEndpoint.GetBySystemName(region));
+});
+builder.Services.AddSingleton<IEmailSender, SesEmailSender>();
+builder.Services.AddSingleton<EmailNotificationService>();
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -88,6 +117,7 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 }
 await app.Services.SeedAdminUserAsync();
+await app.Services.SeedDefaultCategoriesAsync();
 
 if (app.Environment.IsDevelopment())
 {
@@ -113,6 +143,7 @@ app.UseAuthorization();
 
 app.MapAuthEndpoints();
 app.MapInventoryEndpoints();
+app.MapCategoryEndpoints();
 app.MapReservationEndpoints();
 
 app.Run();

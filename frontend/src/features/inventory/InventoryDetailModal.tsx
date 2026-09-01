@@ -1,14 +1,12 @@
 import { useState } from "react";
+import { Flower } from "lucide-react";
 import type { InventoryItem } from "./types";
+import { getCoverImageIndex } from "./imageHelpers";
 import { Modal } from "../../components/Modal";
 import { QuantityStepper } from "../../components/QuantityStepper";
 import { useCart } from "../cart/CartContext";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
-
-function formatPrice(price: number): string {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(price);
-}
+import { uploadUrl } from "../../lib/apiClient";
+import { formatPrice } from "../../lib/format";
 
 interface InventoryDetailModalProps {
   item: InventoryItem;
@@ -17,7 +15,7 @@ interface InventoryDetailModalProps {
 
 export function InventoryDetailModal({ item, onClose }: InventoryDetailModalProps) {
   const { addToCart } = useCart();
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [activeImageIndex, setActiveImageIndex] = useState(() => getCoverImageIndex(item));
   const [quantity, setQuantity] = useState(1);
   const inStock = item.quantityAvailable > 0;
   const activeImage = item.images[activeImageIndex];
@@ -28,15 +26,17 @@ export function InventoryDetailModal({ item, onClose }: InventoryDetailModalProp
   }
 
   return (
-    <Modal title={item.type} onClose={onClose} wide>
+    // Color leads here for the same reason it leads on the card and the cart line - it's the
+    // characteristic customers actually shop by; type/size are the qualifiers.
+    <Modal title={item.color ?? item.type} onClose={onClose} wide>
       <div className="detail-layout">
         <div className="detail-gallery">
           <div className="detail-gallery-main">
             {activeImage ? (
-              <img src={`${API_BASE}${activeImage.url}`} alt={item.type} />
+              <img src={uploadUrl(activeImage.url)} alt={item.color ?? item.type} />
             ) : (
               <div className="inventory-card-image-placeholder" aria-hidden="true">
-                🌸
+                <Flower size={48} strokeWidth={1.5} />
               </div>
             )}
           </div>
@@ -49,7 +49,7 @@ export function InventoryDetailModal({ item, onClose }: InventoryDetailModalProp
                   className={`detail-gallery-thumb${index === activeImageIndex ? " detail-gallery-thumb--active" : ""}`}
                   onClick={() => setActiveImageIndex(index)}
                 >
-                  <img src={`${API_BASE}${image.url}`} alt="" />
+                  <img src={uploadUrl(image.url)} alt="" />
                 </button>
               ))}
             </div>
@@ -57,7 +57,7 @@ export function InventoryDetailModal({ item, onClose }: InventoryDetailModalProp
         </div>
         <div className="detail-info">
           <p className="inventory-card-meta">
-            {[item.color, item.size].filter(Boolean).join(" · ")}
+            {[item.type, item.size].filter(Boolean).join(" · ")}
           </p>
           <p className="detail-price">{formatPrice(item.price)}</p>
           <p className={`stock-badge ${inStock ? "stock-badge--in" : "stock-badge--out"}`}>

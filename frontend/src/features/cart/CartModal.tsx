@@ -1,15 +1,17 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
+import { Flower } from "lucide-react";
 import { Modal } from "../../components/Modal";
+import { FormError, useDismissingError } from "../../components/FormError";
 import { QuantityStepper } from "../../components/QuantityStepper";
 import { useCart } from "./CartContext";
-import { createReservation } from "../reservations/reservationsApi";
-import { extractErrorMessage } from "../../lib/apiClient";
+import { getCoverImage } from "../inventory/imageHelpers";
+import { createPickupRequest } from "../reservations/reservationsApi";
+import { extractErrorMessage, uploadUrl } from "../../lib/apiClient";
+import { formatPrice } from "../../lib/format";
+import { formatPhoneInput, isCompletePhone } from "../../lib/phone";
+import { shakeFields } from "../../lib/shake";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
-
-function formatPrice(price: number): string {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(price);
-}
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type View = "cart" | "checkout" | "success";
 
@@ -21,9 +23,12 @@ export function CartModal() {
   const [customerEmail, setCustomerEmail] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useDismissingError();
   const [submittedCount, setSubmittedCount] = useState(0);
   const [submittedContact, setSubmittedContact] = useState("");
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const phoneInputRef = useRef<HTMLInputElement>(null);
+  const emailInputRef = useRef<HTMLInputElement>(null);
 
   function handleClose() {
     setView("cart");
@@ -35,25 +40,42 @@ export function CartModal() {
     event.preventDefault();
     setError(null);
 
+    if (!customerName.trim()) {
+      setError("Enter your name.");
+      shakeFields(nameInputRef.current);
+      return;
+    }
+
     if (!customerPhone.trim() && !customerEmail.trim()) {
       setError("Provide a phone number or email address so we can reach you.");
+      shakeFields(phoneInputRef.current, emailInputRef.current);
+      return;
+    }
+
+    if (customerPhone.trim() && !isCompletePhone(customerPhone)) {
+      setError("Enter a 10-digit phone number, e.g. (555) 123-4567.");
+      shakeFields(phoneInputRef.current);
+      return;
+    }
+
+    if (customerEmail.trim() && !EMAIL_PATTERN.test(customerEmail.trim())) {
+      setError("Enter a valid email address.");
+      shakeFields(emailInputRef.current);
       return;
     }
 
     setSubmitting(true);
     try {
-      await Promise.all(
-        lines.map((line) =>
-          createReservation({
-            inventoryItemId: line.item.id,
-            customerName,
-            customerPhone,
-            customerEmail,
-            quantityRequested: line.quantity,
-            notes,
-          }),
-        ),
-      );
+      await createPickupRequest({
+        customerName,
+        customerPhone,
+        customerEmail,
+        notes,
+        items: lines.map((line) => ({
+          inventoryItemId: line.item.id,
+          quantityRequested: line.quantity,
+        })),
+      });
       setSubmittedCount(itemCount);
       setSubmittedContact(customerPhone.trim() || customerEmail.trim());
       clearCart();
@@ -67,14 +89,16 @@ export function CartModal() {
 
   if (view === "success") {
     return (
-      <Modal title="Request sent" onClose={handleClose}>
-        <p>
-          Thanks, {customerName}! Your pickup request for {submittedCount} {submittedCount === 1 ? "item" : "items"}
-          {" "}has been sent. We&apos;ll reach out at {submittedContact} to arrange pickup.
+      <Modal title="Request Sent" onClose={handleClose} centeredTitle>
+        <p className="detail-description detail-description--centered">
+          Your pickup request for {submittedCount} {submittedCount === 1 ? "item" : "items"}
+          {" "}has been sent. We&apos;ll reach out at {submittedContact} to arrange a pickup.
         </p>
-        <button type="button" className="btn btn-primary" onClick={handleClose}>
-          Done
-        </button>
+        <div className="cart-checkout-actions cart-checkout-actions--centered">
+          <button type="button" className="btn btn-primary" onClick={handleClose}>
+            Done
+          </button>
+        </div>
       </Modal>
     );
   }
@@ -82,39 +106,46 @@ export function CartModal() {
   if (view === "checkout") {
     return (
       <Modal title="Request for Pickup" onClose={handleClose} wide>
-        <form className="form" onSubmit={handleSubmit}>
-          {error && <p className="form-error">{error}</p>}
+        <form className="form" onSubmit={handleSubmit} noValidate>
           <label>
-            Your name
-            <input type="text" required value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+            Your Name
+            <input
+              type="text"
+              ref={nameInputRef}
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+            />
           </label>
           <label>
             Phone
             <input
               type="tel"
-              placeholder="Optional if you provide an email"
+              ref={phoneInputRef}
+              placeholder="Provide either a phone number or email address"
               value={customerPhone}
-              onChange={(e) => setCustomerPhone(e.target.value)}
+              onChange={(e) => setCustomerPhone(formatPhoneInput(e.target.value))}
             />
           </label>
           <label>
             Email
             <input
               type="email"
-              placeholder="Optional if you provide a phone number"
+              ref={emailInputRef}
+              placeholder="Provide either a phone number or email address"
               value={customerEmail}
               onChange={(e) => setCustomerEmail(e.target.value)}
             />
           </label>
           <label>
-            Notes (optional)
+            Notes
             <textarea
               rows={3}
-              placeholder="Preferred pickup day, questions, etc."
+              placeholder="Optional: Preferred pickup day, questions, etc."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             />
           </label>
+          <FormError message={error} reserveSpace tight />
           <div className="cart-checkout-summary">
             {itemCount} {itemCount === 1 ? "item" : "items"} · {formatPrice(totalValue)}
           </div>
@@ -139,20 +170,20 @@ export function CartModal() {
         <>
           <div className="cart-lines">
             {lines.map((line) => {
-              const coverImage = line.item.images[0];
+              const coverImage = getCoverImage(line.item);
               return (
                 <div className="cart-line" key={line.item.id}>
                   <div className="cart-line-image">
                     {coverImage ? (
-                      <img src={`${API_BASE}${coverImage.url}`} alt={line.item.type} />
+                      <img src={uploadUrl(coverImage.url)} alt={line.item.color ?? line.item.type} />
                     ) : (
-                      <span aria-hidden="true">🌸</span>
+                      <Flower size={28} strokeWidth={1.5} aria-hidden="true" />
                     )}
                   </div>
                   <div className="cart-line-info">
-                    <p className="cart-line-title">{line.item.type}</p>
+                    <p className="cart-line-title">{line.item.color}</p>
                     <p className="inventory-card-meta">
-                      {[line.item.color, line.item.size].filter(Boolean).join(" · ")}
+                      {[line.item.type, line.item.size].filter(Boolean).join(" · ")}
                     </p>
                     <p className="inventory-card-price">{formatPrice(line.item.price)}</p>
                   </div>

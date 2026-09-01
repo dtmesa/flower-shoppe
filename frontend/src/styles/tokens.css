@@ -1,0 +1,164 @@
+:root {
+  --font-heading: "Bodoni Moda", "Georgia", "Times New Roman", serif;
+  --font-body: "Montserrat", "Segoe UI", system-ui, -apple-system, sans-serif;
+
+  /* ---- Palette ---------------------------------------------------------------------------
+     Raw brand colors. Everything below is expressed in terms of these or of the semantic
+     tokens further down - component rules should never hardcode a hex. */
+  --color-primary: #2a7195;
+  --color-primary-dark: #1e536f;
+  --color-accent: #47a6b0;
+  --color-bg: #436c85;
+  --color-surface: #ffffff;
+  --color-surface-alt: #ecf4f8;
+  --color-text: #1c3444;
+  --color-text-muted: #2f4f60;
+  --color-border: #d3e3ea;
+  --color-success: #2f8f7c;
+  --color-danger: #c1503f;
+
+  /* Blue text set against a card/surface background (links, prices) - kept separate from
+     --color-primary-dark's use as a button background, since text needs its own, lighter
+     override in dark mode while the button background should not lighten. */
+  --color-link: var(--color-primary-dark);
+  --shadow-soft: 0 8px 24px rgba(15, 35, 48, 0.16);
+  --radius: 12px;
+
+  /* Text sitting directly on the blue page canvas (not inside a white card/panel)
+     needs its own light palette - the mid-blue background doesn't contrast well
+     against either --color-text or --color-text-muted. */
+  --color-on-bg: #f4f9fb;
+  --color-on-bg-muted: rgba(244, 249, 251, 0.82);
+
+  /* Header/footer band: a darker shade of the page background rather than a separate
+     surface color, so it reads as one canvas that dips darker at the bands instead of
+     switching palettes. References --color-bg so it stays correct if that's ever retuned. */
+  --color-header: color-mix(in srgb, var(--color-bg) 82%, black 18%);
+
+  /* ---- Semantic tokens -------------------------------------------------------------------
+     Light-mode values; [data-theme="dark"] near the bottom of this file redefines only the
+     ones that actually differ. Component rules reference these, so retuning a colour is a
+     one-line change here rather than a hunt through the stylesheet.
+
+     Anything NOT redefined in the dark block is intentionally theme-independent - the status
+     pills and the photo-remove bubble are deliberately identical in both themes. */
+
+  /* Floating theme-toggle button. --color-primary-dark sits too close in luminance to
+     --color-header (the footer band) for the button to read against it, hence its own value. */
+  --color-fab-bg: #183e55;
+  --color-fab-text: #ffffff;
+
+  /* Circular "+" action button (new inventory item, add photo). */
+  --color-icon-circle-bg: var(--color-primary-dark);
+  --color-icon-circle-text: #ffffff;
+
+  /* Pending-count badge on the admin tabs. Sits directly on the blue canvas, where
+     --color-primary is too close in luminance to --color-bg to read cleanly. */
+  --color-badge-bg: var(--color-primary-dark);
+  --color-badge-text: #ffffff;
+
+  /* Section heading that sits on the blue page canvas rather than on a card. */
+  --color-section-heading: var(--color-on-bg);
+
+  /* Filter checkbox label on hover. */
+  --color-filter-label-hover: var(--color-primary);
+
+  /* Stock badge on catalog cards / detail modal. */
+  --color-stock-badge-bg: #f6e3e0;
+  --color-stock-badge-text: #8f3324;
+
+  /* Generic destructive button (category delete, cart remove). */
+  --color-danger-btn-bg: #f8d7d0;
+  --color-danger-btn-text: #c81e0f;
+
+  /* Inline validation/API error banner, plain variant. */
+  --color-form-error-bg: #fbeae7;
+  --color-form-error-text: var(--color-danger);
+
+  /* Error banner variant that reserves its own height and fades in place. */
+  --color-form-error-reserved-bg: #f0b3d2;
+  --color-form-error-reserved-text: #6b0f42;
+
+  /* Error text shown directly on the blue page canvas rather than in a banner. */
+  --color-state-error-text: #ffd9cf;
+
+  /* Table row action buttons - their own hue so they don't drag the shared .btn-secondary /
+     .btn-danger appearance around with them. */
+  --color-action-edit-bg: #90b4c8;
+  --color-action-edit-text: #12293a;
+  --color-action-delete-bg: #d494a3;
+  --color-action-delete-text: #4a0f26;
+
+  /* Photo "remove" bubble in the image manager (same in both themes). */
+  --color-photo-remove-bg: #9c1478;
+  --color-photo-remove-text: #ffffff;
+
+  /* Pickup-request status pills. Fixed pastel backgrounds in both themes so a status always
+     reads the same colour regardless of the surrounding surface. */
+  --color-status-new-bg: #eaf2f7;
+  --color-status-new-text: #4a7086;
+  --color-status-contacted-bg: #e6eefb;
+  --color-status-contacted-text: #34568a;
+  --color-status-confirmed-bg: #ede7f9;
+  --color-status-confirmed-text: #6a4bab;
+  --color-status-completed-bg: #e4f0e6;
+  --color-status-completed-text: var(--color-success);
+  --color-status-cancelled-bg: #f2c7dd;
+  --color-status-cancelled-text: #7a1a4d;
+
+  /* Hover lift strength. Light mode's near-white surfaces have far less headroom than dark
+     mode's, so the same multiplier reads as a harsher flash there. */
+  --hover-brightness: 1.05;
+  --hover-brightness-strong: 1.7;
+  --hover-brightness-badge: 1.08;
+  --hover-brightness-status: 1.03;
+
+  font-family: var(--font-body);
+  color-scheme: light;
+}
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-bg: #142b39;
+  --color-surface: #1b3847;
+  --color-surface-alt: #234354;
+  --color-text: #e9f3f7;
+  --color-text-muted: #9dbccb;
+  --color-border: #2f5163;
+  --color-link: #9fd8e8;
+
+  /* The teal accent reads against the dark canvas; --color-primary-dark does not. */
+  --color-fab-bg: var(--color-accent);
+  --color-icon-circle-bg: var(--color-accent);
+
+  /* On the dark canvas the badge no longer needs darkening for contrast. */
+  --color-badge-bg: var(--color-primary);
+
+  /* h3 on the blue canvas: --color-text already resolves light here. */
+  --color-section-heading: var(--color-text);
+
+  --color-filter-label-hover: color-mix(in srgb, var(--color-text) 20%, white 80%);
+
+  --color-stock-badge-bg: #4a2c26;
+  --color-stock-badge-text: #f0a99c;
+
+  --color-danger-btn-bg: #5a2a20;
+  --color-danger-btn-text: #ff7a63;
+
+  --color-form-error-bg: #4a2c26;
+  --color-form-error-reserved-bg: #4a1626;
+  --color-form-error-reserved-text: #f2a8c2;
+
+  /* Row Edit falls back to the plain secondary-button look here; row Delete keeps its own
+     burgundy so it stays distinct from the generic orange-red .btn-danger. */
+  --color-action-edit-bg: var(--color-border);
+  --color-action-edit-text: var(--color-text);
+  --color-action-delete-bg: #4a1626;
+  --color-action-delete-text: #f2a8c2;
+
+  /* Dark surfaces have headroom for a stronger hover lift than near-white ones do. */
+  --hover-brightness: 1.12;
+  --hover-brightness-strong: 1.12;
+  --hover-brightness-badge: 1.2;
+  --hover-brightness-status: 1.08;
+}

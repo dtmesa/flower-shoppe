@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useLocation } from "react-router-dom";
 import type { InventoryItem } from "../inventory/types";
 import { useInventory } from "../inventory/inventoryApi";
 
@@ -34,7 +35,11 @@ function loadStoredQuantities(): Record<string, number> {
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const { items } = useInventory();
+  // The cart is mounted app-wide (Header reads its open-state on every route) but is only ever
+  // shown on the storefront, so skip the catalog fetch on admin routes rather than pulling a
+  // list nothing there will render.
+  const isAdminRoute = useLocation().pathname.startsWith("/admin");
+  const { items } = useInventory(!isAdminRoute);
   const [quantities, setQuantities] = useState<Record<string, number>>(loadStoredQuantities);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -59,7 +64,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const nextQuantity = Math.min((prev[item.id] ?? 0) + quantity, item.quantityAvailable);
       return { ...prev, [item.id]: nextQuantity };
     });
-    setIsOpen(true);
   }, []);
 
   const updateQuantity = useCallback((itemId: string, quantity: number) => {
@@ -80,19 +84,26 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clearCart = useCallback(() => setQuantities({}), []);
+  const openCart = useCallback(() => setIsOpen(true), []);
+  const closeCart = useCallback(() => setIsOpen(false), []);
 
-  const value: CartContextValue = {
-    lines,
-    itemCount,
-    totalValue,
-    isOpen,
-    openCart: () => setIsOpen(true),
-    closeCart: () => setIsOpen(false),
-    addToCart,
-    updateQuantity,
-    removeFromCart,
-    clearCart,
-  };
+  // Memoized so consumers only re-render when cart contents or open-state actually change -
+  // an inline object literal here would be a new reference on every provider render.
+  const value = useMemo<CartContextValue>(
+    () => ({
+      lines,
+      itemCount,
+      totalValue,
+      isOpen,
+      openCart,
+      closeCart,
+      addToCart,
+      updateQuantity,
+      removeFromCart,
+      clearCart,
+    }),
+    [lines, itemCount, totalValue, isOpen, openCart, closeCart, addToCart, updateQuantity, removeFromCart, clearCart],
+  );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

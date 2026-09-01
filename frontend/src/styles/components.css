@@ -1,0 +1,1680 @@
+/* Header */
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background: var(--color-header);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.site-brand-group {
+  display: flex;
+  align-items: baseline;
+  gap: 1.75rem;
+}
+
+.site-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: "Bodoni Moda SC", var(--font-heading);
+  font-size: 1.45rem;
+  text-decoration: none;
+  color: var(--color-on-bg);
+}
+
+.site-subheader-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 400;
+  color: var(--color-on-bg-muted);
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.1s ease;
+}
+
+.site-subheader-link:hover:not(:disabled):not(:active) {
+  filter: brightness(1.4);
+}
+
+.site-subheader-link:hover:not(:disabled):not(:active) {
+  transform: scale(1.03);
+}
+
+.site-brand-text {
+  display: inline-block;
+}
+
+.wave-letter {
+  display: inline-block;
+}
+
+.site-brand:hover .wave-letter,
+.contact-footer-title--wave .wave-letter {
+  animation: letter-wave 1s ease-in-out;
+  animation-delay: calc(var(--i) * 0.04s);
+}
+
+@keyframes letter-wave {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+.site-header-right {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  font-size: 0.95rem;
+}
+
+.logout-button {
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--color-on-bg);
+}
+
+/* Floating action button, fixed to the bottom-right corner of the viewport on every page. */
+.theme-toggle {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  z-index: 100;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-fab-bg);
+  color: var(--color-fab-text);
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.1s ease, opacity 0.1s ease;
+}
+
+.theme-toggle:hover {
+  transform: scale(1.03);
+}
+
+/* Wins over the hover rule above (same specificity, declared later) so a press still reads as a
+   press even while the cursor is also hovering. */
+.theme-toggle:active {
+  transform: scale(0.95);
+  opacity: 0.85;
+}
+
+.theme-toggle-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.theme-toggle-icon.theme-toggle-icon--active {
+  opacity: 1;
+}
+
+.logout-button svg {
+  transition: transform 0.15s ease;
+}
+
+.logout-button:hover svg {
+  transform: scale(1.03);
+}
+
+/* Cart */
+.cart-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-on-bg);
+  font: inherit;
+}
+
+.cart-summary {
+  font-size: 0.85rem;
+  color: var(--color-on-bg-muted);
+  white-space: nowrap;
+}
+
+.cart-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  transition: transform 0.1s ease, opacity 0.1s ease;
+}
+
+.cart-icon svg {
+  transition: transform 0.2s ease;
+}
+
+.cart-trigger:hover .cart-icon svg {
+  transform: scale(1.03);
+}
+
+/* The button-wide press scale (from the global button:active rule) would shrink the price text
+   along with the icon; cancel it on the button itself and apply the shrink to just the icon+badge
+   instead, so the dollar amount stays a fixed size while pressed. */
+.cart-trigger:active {
+  transform: none;
+  opacity: 1;
+}
+
+.cart-trigger:active .cart-icon {
+  transform: scale(0.975);
+  opacity: 0.85;
+}
+
+.cart-badge {
+  position: absolute;
+  top: -0.5rem;
+  right: -0.6rem;
+  background: var(--color-primary);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+}
+
+.cart-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.cart-line {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  gap: 1rem;
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cart-line:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.cart-line-image {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--color-surface-alt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+}
+
+.cart-line-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cart-line-title {
+  font-weight: 700;
+  margin: 0;
+}
+
+.cart-line-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.cart-line-controls .link-button {
+  text-decoration: none;
+}
+
+.cart-line-controls .link-button:hover {
+  text-decoration: underline;
+}
+
+.cart-checkout-summary {
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.cart-checkout-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.cart-checkout-actions--centered {
+  justify-content: center;
+}
+
+.detail-add-to-cart {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.detail-add-to-cart .btn {
+  height: 2.75rem;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+}
+
+/* Quantity stepper: number input with chevron up/down buttons docked inside its right edge */
+.quantity-stepper {
+  position: relative;
+  display: inline-flex;
+  width: 5rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+}
+
+.quantity-stepper input[type="number"] {
+  width: 100%;
+  height: 100%;
+  padding: 0 1.6rem 0 0.65rem;
+  text-align: center;
+  box-sizing: border-box;
+  -moz-appearance: textfield;
+}
+
+.quantity-stepper input[type="number"]::-webkit-outer-spin-button,
+.quantity-stepper input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.quantity-stepper-buttons {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  bottom: 2px;
+  width: 1.4rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.quantity-stepper-buttons button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.quantity-stepper-buttons button:hover:not(:disabled) {
+  color: var(--color-text);
+}
+
+.quantity-stepper-buttons button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Page layout */
+.page {
+  flex: 1;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+.page--narrow {
+  max-width: 420px;
+}
+
+.admin-account-page {
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.admin-account-page .form label {
+  color: var(--color-on-bg-muted);
+}
+
+.banner {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.banner-image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.banner-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 3rem 1.5rem 0.75rem;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.contact-footer {
+  background: var(--color-header);
+  padding: 3rem 1.5rem;
+}
+
+.contact-footer-inner {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.contact-footer h2 {
+  color: var(--color-on-bg);
+}
+
+.contact-footer p {
+  color: var(--color-on-bg-muted);
+  margin: 0 0 1.25rem;
+}
+
+.contact-footer-details {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.75rem 2rem;
+  font-weight: 600;
+  color: var(--color-on-bg);
+}
+
+.banner-overlay h1,
+.banner-overlay p {
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.banner-overlay h1 {
+  margin-bottom: 0.15em;
+}
+
+.banner-overlay p {
+  margin-top: 0;
+}
+
+.state-message {
+  color: var(--color-on-bg-muted);
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.state-message--left {
+  text-align: left;
+}
+
+/* Inside a modal, .state-message sits on the white/near-white .modal-panel surface, not the
+   blue page canvas the base color above is tuned for - swap to the surface-appropriate muted
+   token there instead. */
+.modal-body .state-message {
+  color: var(--color-text-muted);
+}
+
+.state-message--compact {
+  padding: 0.25rem 0 0;
+  font-style: italic;
+  /* The invisible (but still full-height, so a real error has room to fade in) reserved error
+     box right above this in the DOM otherwise reads as a big blank gap when there's no error -
+     tuck this text up over it. */
+  margin-top: -1rem;
+}
+
+.state-message--error {
+  color: var(--color-state-error-text);
+}
+
+/* Catalog layout: sidebar filters + content grid */
+.catalog-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 2rem;
+}
+
+.catalog-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.filter-sidebar {
+  flex: 0 0 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-soft);
+  position: sticky;
+  top: 5.5rem;
+}
+
+.filter-section h3 {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  margin: 0 0 0.6rem;
+}
+
+.filter-section:last-child h3 {
+  margin-bottom: 0.35rem;
+}
+
+.filter-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: 0.9rem;
+  line-height: 1.2;
+  color: var(--color-text);
+  margin-bottom: 0.45rem;
+  cursor: pointer;
+}
+
+.filter-checkbox-label {
+  margin-top: 2px;
+  transition: color 0.15s ease, transform 0.1s ease, opacity 0.1s ease;
+}
+
+/* Light mode shifts toward the primary blue; dark mode mixes toward white. A plain
+   mix-toward-white washes out to near-invisible on light mode's white card, and the blue
+   wouldn't stand out on dark mode's dark card - so the whole colour comes from a token. */
+.filter-checkbox:hover .filter-checkbox-label {
+  color: var(--color-filter-label-hover);
+  transform: scale(1.02);
+}
+
+.filter-checkbox:active .filter-checkbox-label {
+  transform: scale(0.98);
+  opacity: 0.75;
+}
+
+.checkbox-box {
+  position: relative;
+  display: inline-flex;
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+}
+
+/* Flex items default to min-width/min-height: auto, which lets a child's intrinsic
+   (padding-driven) size override an explicit width/height - min-width/height: 0 here
+   is what actually lets the 1.1rem square take effect instead of being padding-sized. */
+.checkbox-box input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 1.5px solid var(--color-border);
+  border-radius: 6px;
+  background-color: var(--color-surface);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.checkbox-box input[type="checkbox"]:checked {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.filter-checkbox:hover .checkbox-box input[type="checkbox"]:not(:checked) {
+  background-color: var(--color-surface-alt);
+}
+
+.checkbox-box svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.checkbox-box input[type="checkbox"]:checked + svg {
+  opacity: 1;
+}
+
+.filter-slider {
+  --fill: 0%;
+  display: block;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  margin: 0.25rem 0;
+  height: 1rem;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* Native accent-color track fills only up to the thumb's center, which sits inset
+   from the track edges by the thumb's own radius - at max value this leaves a sliver
+   of unfilled track peeking out on the right. Drawing the fill ourselves as a gradient
+   keyed off --fill (set inline from the current value/max fraction) lets it reach 0%
+   and 100% exactly, independent of where the thumb can physically sit. */
+.filter-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--color-primary) var(--fill), var(--color-border) var(--fill));
+}
+
+.filter-slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  cursor: pointer;
+}
+
+.filter-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-border);
+}
+
+.filter-slider::-moz-range-progress {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-primary);
+}
+
+.filter-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-primary);
+  cursor: pointer;
+}
+
+.filter-slider-range {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-top: 0.15rem;
+}
+
+.filter-slider-infinity {
+  display: inline-block;
+  font-size: 1.05rem;
+  line-height: 0.6;
+  vertical-align: middle;
+}
+
+input, select, textarea, button {
+  font: inherit;
+}
+
+button {
+  transition: transform 0.1s ease, opacity 0.1s ease;
+}
+
+button:active {
+  transform: scale(0.975);
+  opacity: 0.85;
+}
+
+button:hover:not(:disabled):not(:active) {
+  filter: brightness(1.12);
+}
+
+textarea {
+  resize: vertical;
+}
+
+input, select, textarea {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  transition: border-color 0.2s ease;
+}
+
+/* Edge (and Chromium behind a flag) draw their own reveal "eye" and clear "x" controls inside
+   password inputs. Every password field here already ships a custom .password-toggle sitting in
+   that same reserved right-hand gutter, so the native pair has to go or the two overlap. */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+
+/* Pairs with a validation error message - applied/cleared by the same component state (and
+   the same auto-dismiss timer) that drives the message itself. The shake only plays once, when
+   the class is first added (React won't re-add an already-present class, so re-triggering the
+   same field's error while it's still shaking just leaves it at rest, not a regression). */
+.field-invalid {
+  animation: field-shake 0.4s ease;
+}
+
+@keyframes field-shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+/* Text-style fields highlight on click too (not just keyboard nav) so it's clear which one you're
+   typing into; checkboxes/radios keep :focus-visible only - that's the one already fixed to not
+   show a border after a plain mouse click (see earlier "checking a box creates a border" fix).
+   Recolors the existing hairline border (no width change) plus a faint background tint, instead
+   of a separate outline ring stacked on top of it. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(:disabled):hover,
+select:not(.status-select):not(:disabled):hover,
+textarea:not(:disabled):hover {
+  background-color: var(--color-surface-alt);
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(:disabled):focus,
+select:not(.status-select):not(:disabled):focus,
+textarea:not(:disabled):focus {
+  outline: none;
+  border-color: var(--color-accent);
+  background-color: var(--color-surface-alt);
+}
+
+/* .status-select carries its own pastel background+text per status (see .status-select--* below)
+   - the generic select hover/focus above would otherwise override it (a pseudo-class pushes an
+   element selector's specificity above a single class), swapping every status to the same tinted
+   look and a blue focus border regardless of its actual color. Highlight without touching hue,
+   and leave press/focus completely alone so the resting color always holds. */
+.status-select:hover {
+  filter: brightness(var(--hover-brightness-status));
+}
+
+.status-select:focus {
+  outline: none;
+}
+
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+/* Inventory grid */
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.inventory-card {
+  display: block;
+  text-align: left;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.inventory-card:hover {
+  transform: scale(1.015);
+  /* On the (near-)white light-mode surface this is a no-op - already at max brightness -
+     the visible effect is in dark mode, where the card surface actually has headroom.
+     Text color is only bumped to match in the dark-mode block below: in light mode the
+     background doesn't move, so brightening the (already-dark) text there would only
+     hurt contrast against the still-white card, not preserve it. */
+  background: color-mix(in srgb, var(--color-surface) 95%, white 5%);
+}
+
+.inventory-card-image {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: var(--color-surface-alt);
+}
+
+.inventory-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.inventory-card-image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+}
+
+.stock-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.inventory-card-image .stock-badge {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0.5rem;
+}
+
+/* Both variants share a colour deliberately: the catalog filters out-of-stock items out
+   entirely, so the "--out" case is effectively unreachable there. */
+.stock-badge--in,
+.stock-badge--out {
+  background: var(--color-stock-badge-bg);
+  color: var(--color-stock-badge-text);
+}
+
+.inventory-card-body {
+  padding: 0.9rem 1rem 1.1rem;
+}
+
+.inventory-card-body h3 {
+  font-size: 1.05rem;
+}
+
+.inventory-card-meta {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  margin: 0.2rem 0 0.5rem;
+}
+
+.inventory-card-price {
+  font-weight: 700;
+  color: var(--color-link);
+  margin: 0;
+}
+
+/* Buttons */
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.1rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--color-primary-dark);
+  color: white;
+}
+
+.btn-secondary {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.btn-danger {
+  background: var(--color-danger-btn-bg);
+  color: var(--color-danger-btn-text);
+}
+
+.btn-danger--action {
+  background: var(--color-action-delete-bg);
+  color: var(--color-action-delete-text);
+}
+
+.btn-small {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.85rem;
+}
+
+
+/* Modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 30, 42, 0.68);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 100;
+}
+
+.modal-panel {
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  max-width: 480px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+.modal-panel--wide {
+  max-width: 760px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.modal-header h2 {
+  margin: 0;
+}
+
+/* Centers the title within the header row while the close button stays pinned to the right -
+   the title takes the remaining space rather than the header switching to justify-content:
+   center, which would drag the close button toward the middle too. */
+.modal-header--centered h2 {
+  flex: 1;
+  text-align: center;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  display: inline-flex;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  padding: 0;
+}
+
+/* Detail view */
+.detail-layout {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 1.5rem;
+}
+
+.detail-gallery-main {
+  aspect-ratio: 4 / 3;
+  background: var(--color-surface-alt);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.detail-gallery-main img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.detail-gallery-thumbs {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.detail-gallery-thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.detail-gallery-thumb--active {
+  border-color: var(--color-primary);
+}
+
+.detail-gallery-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.detail-price {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--color-link);
+  margin: 0.4rem 0;
+}
+
+.detail-description {
+  color: var(--color-text);
+  white-space: pre-wrap;
+}
+
+.detail-description--centered {
+  text-align: center;
+}
+
+/* Forms */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+/* The login form is the one form that sits directly on the blue canvas rather
+   than inside a white modal panel. */
+.page--narrow .form label {
+  color: var(--color-on-bg-muted);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.form-error {
+  background: var(--color-form-error-bg);
+  color: var(--color-form-error-text);
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.form-error svg {
+  flex-shrink: 0;
+}
+
+/* Always mounted (rather than conditionally rendered) so its box permanently reserves its own
+   height - appearing/disappearing then only fades opacity in place instead of shifting the
+   sections below it. Scoped to this modifier rather than the base .form-error rule, which other
+   call sites still mount/unmount conditionally and expect fully opaque by default. */
+.form-error--reserved {
+  background-color: var(--color-form-error-reserved-bg);
+  color: var(--color-form-error-reserved-text);
+  /* Fixed regardless of whether the text is empty or populated - an empty inline text node
+     collapses to a shorter line box than one with real text in it, which was nudging the
+     table below by a few px right as the message appeared. */
+  height: 2.6rem;
+  opacity: 0;
+  transition: opacity 1s ease;
+  pointer-events: none;
+}
+
+.form-error--reserved.form-error--visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.form-error--compact {
+  margin-top: -0.5rem;
+}
+
+/* Trims the default 1rem form gap slightly on both sides, rather than just above. */
+.form-error--tight {
+  margin: -0.5rem 0;
+}
+
+/* Clamped to one line so the reserved box's height never grows when a message happens to be
+   long enough to wrap - the icon+padding already fix the height, but only if the text can't
+   add a second line. */
+.form-error-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.password-field {
+  position: relative;
+  display: flex;
+}
+
+.password-field input {
+  width: 100%;
+  padding-right: 2.5rem;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.65rem;
+  margin-top: -9px;
+  width: 18px;
+  height: 18px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+
+.password-toggle-icon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.password-toggle-icon.password-toggle-icon--active {
+  opacity: 1;
+}
+
+/* Image manager */
+.image-manager {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.image-manager-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.image-manager-header h3 {
+  margin: 0;
+}
+
+.image-manager-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.image-manager-thumb {
+  position: relative;
+  width: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  text-align: center;
+}
+
+.image-manager-thumb-image {
+  position: relative;
+  display: inline-block;
+}
+
+/* The non-primary photo is itself the "set thumbnail" control - a plain <button> wrapping the
+   img, reset to no chrome of its own. It inherits the app-wide button hover/press treatment
+   (brightness lift on hover, scale+opacity dip on press) for free from the global `button` rule. */
+.image-manager-thumb-button {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.image-manager-thumb-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.image-manager-remove-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-photo-remove-bg);
+  color: var(--color-photo-remove-text);
+  cursor: pointer;
+}
+
+.image-manager-remove-btn:disabled {
+  cursor: not-allowed;
+  filter: brightness(0.6);
+}
+
+/* Wins over the generic button:active opacity dip (class+pseudo beats type+pseudo) - darkens
+   the fill instead of fading it, matching the disabled state's treatment above. */
+.image-manager-remove-btn:active {
+  filter: brightness(0.6);
+  opacity: 1;
+}
+
+/* Overlays the photo's bottom-right corner, mirroring the star badge's top-right placement.
+   Positioned relative to .image-manager-thumb (not .image-manager-thumb-image) since the
+   non-primary image is itself a <button> (set-thumbnail) - nesting this button inside that one
+   would be invalid HTML, so it stays a sibling instead. */
+.image-manager-remove-btn--corner {
+  position: absolute;
+  bottom: -6px;
+  right: -6px;
+}
+
+.image-manager-thumb img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  display: block;
+}
+
+.image-manager-thumb--primary img {
+  border-color: var(--color-primary);
+}
+
+.image-manager-thumb .btn {
+  width: 100%;
+}
+
+.image-manager-primary-badge {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: white;
+  box-shadow: var(--shadow-soft);
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid rgba(244, 249, 251, 0.3);
+  margin-bottom: 1.5rem;
+}
+
+.tab {
+  background: none;
+  border: none;
+  padding: 0.7rem 0.2rem;
+  margin-right: 1.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--color-on-bg-muted);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: color 0.15s ease, gap 0.15s ease;
+}
+
+.tab:hover {
+  color: var(--color-on-bg);
+  gap: 0.55rem;
+}
+
+.tab-label {
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+
+.tab:hover .tab-label {
+  transform: scale(1.03);
+}
+
+.tab--active {
+  color: var(--color-on-bg);
+  border-bottom-color: var(--color-on-bg);
+}
+
+.tab-badge {
+  background: var(--color-badge-bg);
+  color: var(--color-badge-text);
+  font-size: 0.7rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  display: inline-block;
+  transition: filter 0.15s ease;
+  /* Plays once whenever the badge (re)mounts - AdminLayout gives it a fresh `key` on first
+     render and each time the pending count goes up, forcing a remount and replaying this. */
+  animation: tab-badge-hop 0.45s ease;
+}
+
+@keyframes tab-badge-hop {
+  0% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-5px);
+  }
+  55% {
+    transform: translateY(0);
+  }
+  75% {
+    transform: translateY(-2px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.tab:hover .tab-badge {
+  filter: brightness(var(--hover-brightness-badge));
+}
+
+.inventory-table-area {
+  position: relative;
+}
+
+.btn-icon-circle {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-icon-circle-bg);
+  color: var(--color-icon-circle-text);
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+}
+
+/* It straddles two different backgrounds (the page canvas above, the table surface below), so
+   the global button:active opacity dip reads inconsistently depending on which half is showing
+   through - darken the button's own fill instead, which stays consistent either way. Wins over
+   the generic button:active on specificity alone (class+pseudo beats type+pseudo). */
+.btn-icon-circle:active {
+  transform: scale(0.95);
+  opacity: 1;
+  filter: brightness(0.8);
+}
+
+/* Centered directly on the table's top-right corner bend instead of sitting in its own row
+   above it. Plays once on mount (i.e. every time the Inventory tab is navigated to) to draw
+   the eye - a gentle scale breathe rather than anything jumpy. */
+.btn-icon-circle--corner {
+  position: absolute;
+  top: -0.75rem;
+  right: -0.75rem;
+  z-index: 2;
+  animation: icon-breathe 1.6s ease-in-out;
+}
+
+@keyframes icon-breathe {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+/* Used next to the Photos heading, where the standard 2.5rem size reads oversized beside the
+   text label. */
+.btn-icon-circle--small {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+/* Tables */
+/* The scrollbar lives on .table-scroll (the inner element), not .table-wrapper - a native
+   scrollbar isn't clipped by border-radius on the same element that owns it in Chromium/Edge, so
+   the rounding has to come from an ancestor's overflow:hidden instead. */
+.table-wrapper {
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  scrollbar-color: var(--color-primary) var(--color-surface-alt);
+  scrollbar-width: thin;
+}
+
+.table-scroll::-webkit-scrollbar {
+  height: 10px;
+}
+
+.table-scroll::-webkit-scrollbar-track {
+  background: var(--color-surface-alt);
+}
+
+.table-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--color-primary);
+  border-radius: 999px;
+  border: 2px solid var(--color-surface-alt);
+}
+
+.table-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.category-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+/* Unlike h2/h3 elsewhere (which only appear inside white cards/modals) this one sits directly
+   on the blue page canvas, so it needs the on-canvas text colour rather than the default. */
+.category-section h3 {
+  margin-bottom: 0.6rem;
+  color: var(--color-section-heading);
+}
+
+.category-add-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.category-add-form input {
+  flex: 1;
+}
+
+.category-add-form input[placeholder="Code"] {
+  flex: 0 0 5rem;
+}
+
+.category-section th:first-child,
+.category-section td:first-child {
+  width: 40%;
+}
+
+.category-section th:nth-child(2),
+.category-section td:nth-child(2) {
+  width: 15%;
+  text-align: center;
+}
+
+.category-section th:last-child,
+.category-section td:last-child {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.category-section .table-actions {
+  justify-content: flex-end;
+}
+
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+th, td {
+  padding: 0.7rem 0.9rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table-wrapper tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.table-wrapper tbody tr:hover {
+  background-color: var(--color-surface-alt);
+}
+
+.table-thumb {
+  width: 42px;
+  height: 42px;
+  border-radius: 6px;
+  object-fit: cover;
+  display: block;
+}
+
+.table-thumb--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+}
+
+/* Quantity columns in the admin inventory table. A live hold is worth noticing; a zero in
+   either column is not, so it recedes. */
+.qty-reserved {
+  font-weight: 700;
+  color: var(--color-link);
+}
+
+.qty-zero {
+  color: var(--color-text-muted);
+  opacity: 0.65;
+}
+
+.table-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Row action buttons get their own hue rather than the shared .btn-secondary / .btn-danger
+   look, which is also used by non-table buttons (cart "Back", image upload) that should stay
+   as they are. Declared after those base rules so the single-class .restore-stock-btn still
+   wins on source order. */
+.table-actions .btn-secondary,
+.restore-stock-btn {
+  background: var(--color-action-edit-bg);
+  color: var(--color-action-edit-text);
+}
+
+.table-actions .btn-danger {
+  background: var(--color-action-delete-bg);
+  color: var(--color-action-delete-text);
+}
+
+.row-delete-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-action-delete-bg);
+  color: var(--color-action-delete-text);
+  cursor: pointer;
+}
+
+.row-delete-btn:disabled {
+  cursor: not-allowed;
+  filter: brightness(0.6);
+}
+
+.status-select {
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  padding: 0.3rem 1.35rem 0.3rem 0.6rem;
+  min-width: 7.5rem;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  /* Every status pill keeps the same fixed light pastel background regardless of theme (see the
+     modifier rules below), so one dark, neutral chevron color reads fine against all of them -
+     no per-mode override needed. Nudged in from the edge (0.6rem, vs. a native arrow that sits
+     flush right) per request to feel less right-aligned. */
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%2333475a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 0.6rem center;
+  background-size: 9px;
+}
+
+.status-select--new {
+  background-color: var(--color-status-new-bg);
+  color: var(--color-status-new-text);
+}
+
+.status-select--contacted {
+  background-color: var(--color-status-contacted-bg);
+  color: var(--color-status-contacted-text);
+}
+
+.status-select--confirmed {
+  background-color: var(--color-status-confirmed-bg);
+  color: var(--color-status-confirmed-text);
+}
+
+.status-select--completed {
+  background-color: var(--color-status-completed-bg);
+  color: var(--color-status-completed-text);
+}
+
+.status-select--cancelled {
+  background-color: var(--color-status-cancelled-bg);
+  color: var(--color-status-cancelled-text);
+}
+
+@media (max-width: 840px) {
+  .site-subheader-link {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .detail-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .site-header {
+    padding: 1rem;
+  }
+
+  .page {
+    padding: 1.5rem 1rem 3rem;
+  }
+
+  .catalog-layout {
+    flex-direction: column;
+  }
+
+  .filter-sidebar {
+    flex: 1 1 auto;
+    width: 100%;
+    position: static;
+  }
+
+  .banner-overlay {
+    padding: 1.25rem 1rem 0.5rem;
+  }
+
+  .banner-overlay h1 {
+    font-size: 1.3rem;
+  }
+
+  .banner-overlay p {
+    font-size: 0.9rem;
+  }
+}
+
+/* Theming is driven by an explicit data-theme attribute on <html> (see the blocking script in
+   index.html and ThemeContext), not prefers-color-scheme directly - that attribute is always
+   set to a concrete "light" or "dark" before first paint (from the user's stored choice, or the
+   system preference as a fallback the first time), so plain attribute selectors are enough; no
+   media query is needed here any more. */
+
+/* These four buttons/pills each want a different hover strength than the generic
+   `button:hover` lift, and the right strength differs per theme - so the selector lives here
+   once and the per-theme value comes from a token. Specificity (0,4,0 with the :not()s) beats
+   the generic button rule regardless of source order. */
+.btn-secondary:hover:not(:disabled):not(:active),
+.btn-danger:hover:not(:disabled):not(:active),
+.row-delete-btn:hover:not(:disabled):not(:active) {
+  filter: brightness(var(--hover-brightness));
+}
+
+/* .modal-close's muted mid-tone barely moves under the generic lift, so it gets a stronger one. */
+.modal-close:hover:not(:disabled):not(:active) {
+  filter: brightness(var(--hover-brightness-strong));
+}
+
+/* ---- Dark-theme component overrides --------------------------------------------------------
+   Almost everything theme-related is handled by token values in tokens.css; only rules whose
+   *behaviour* (not just colour) differs need to live here. */
+
+/* The card background genuinely lightens on hover here (unlike light mode, where the
+   white surface has no headroom), so nudge the text to match and keep contrast steady. */
+[data-theme="dark"] .inventory-card:hover .inventory-card-body h3 {
+  color: color-mix(in srgb, var(--color-text) 95%, white 5%);
+}
+
+[data-theme="dark"] .inventory-card:hover .inventory-card-meta {
+  color: color-mix(in srgb, var(--color-text-muted) 95%, white 5%);
+}

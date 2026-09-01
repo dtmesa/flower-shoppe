@@ -30,7 +30,7 @@ public class InventoryEndpointsTests : IClassFixture<PlumeriaApiFactory>
     {
         var client = _factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/inventory", new InventoryItemCreateRequest("TAG-001", "Rooted Plant", null, null, 24.99m, 5, null));
+        var response = await client.PostAsJsonAsync("/api/inventory", new InventoryItemCreateRequest("Rooted Plant", "Yellow/White", "Medium", 24.99m, 5, null));
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -40,18 +40,18 @@ public class InventoryEndpointsTests : IClassFixture<PlumeriaApiFactory>
     {
         var client = await AuthenticatedClientAsync();
 
-        var createResponse = await client.PostAsJsonAsync("/api/inventory", new InventoryItemCreateRequest("TAG-001", "Rooted Plant", "Yellow/White", "Medium", 24.99m, 5, "Fragrant."));
+        var createResponse = await client.PostAsJsonAsync("/api/inventory", new InventoryItemCreateRequest("Rooted Plant", "Yellow/White", "Medium", 24.99m, 5, "Fragrant."));
         createResponse.EnsureSuccessStatusCode();
         var created = await createResponse.Content.ReadFromJsonAsync<InventoryItemResponse>();
         Assert.NotNull(created);
-        Assert.Equal("TAG-001", created!.Id);
+        Assert.Equal("RYM", created!.Id);
 
         // Public read requires no auth token.
         var publicClient = _factory.CreateClient();
         var getResponse = await publicClient.GetFromJsonAsync<InventoryItemResponse>($"/api/inventory/{created.Id}");
-        Assert.Equal("TAG-001", getResponse!.Id);
+        Assert.Equal("RYM", getResponse!.Id);
 
-        var updateResponse = await client.PutAsJsonAsync($"/api/inventory/{created.Id}", new InventoryItemUpdateRequest("Rooted Plant", "Yellow/White", "Medium", 29.99m, 3, "Fragrant."));
+        var updateResponse = await client.PutAsJsonAsync($"/api/inventory/{created.Id}", new InventoryItemUpdateRequest(29.99m, 3, "Fragrant."));
         updateResponse.EnsureSuccessStatusCode();
         var updated = await updateResponse.Content.ReadFromJsonAsync<InventoryItemResponse>();
         Assert.Equal(29.99m, updated!.Price);
@@ -64,14 +64,14 @@ public class InventoryEndpointsTests : IClassFixture<PlumeriaApiFactory>
     }
 
     [Fact]
-    public async Task Creating_an_item_with_a_duplicate_id_returns_a_bad_request()
+    public async Task Creating_a_second_item_with_the_same_type_color_and_size_returns_a_bad_request()
     {
         var client = await AuthenticatedClientAsync();
 
-        var first = await client.PostAsJsonAsync("/api/inventory", new InventoryItemCreateRequest("TAG-DUP", "Rooted Plant", null, null, 24.99m, 5, null));
+        var first = await client.PostAsJsonAsync("/api/inventory", new InventoryItemCreateRequest("Cutting", "Red", "Small", 9.99m, 5, null));
         first.EnsureSuccessStatusCode();
 
-        var second = await client.PostAsJsonAsync("/api/inventory", new InventoryItemCreateRequest("TAG-DUP", "Cutting", null, null, 9.99m, 2, null));
+        var second = await client.PostAsJsonAsync("/api/inventory", new InventoryItemCreateRequest("Cutting", "Red", "Small", 12.99m, 2, null));
         Assert.Equal(HttpStatusCode.BadRequest, second.StatusCode);
     }
 
@@ -80,7 +80,7 @@ public class InventoryEndpointsTests : IClassFixture<PlumeriaApiFactory>
     {
         var client = await AuthenticatedClientAsync();
 
-        var response = await client.PostAsJsonAsync("/api/inventory", new InventoryItemCreateRequest("TAG-002", "Rooted Plant", null, null, -1m, 5, null));
+        var response = await client.PostAsJsonAsync("/api/inventory", new InventoryItemCreateRequest("Rooted Plant", "Pink", "Large", -1m, 5, null));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -94,7 +94,7 @@ public class InventoryEndpointsTests : IClassFixture<PlumeriaApiFactory>
         // stateless Bearer-token API). A service-layer test with a hand-built IFormFile can't
         // catch this; it only surfaces when the request actually goes through the HTTP pipeline.
         var client = await AuthenticatedClientAsync();
-        var createResponse = await client.PostAsJsonAsync("/api/inventory", new InventoryItemCreateRequest("TAG-003", "Rooted Plant", null, null, 24.99m, 5, null));
+        var createResponse = await client.PostAsJsonAsync("/api/inventory", new InventoryItemCreateRequest("Cutting", "Pink", "Small", 6.00m, 5, null));
         var created = await createResponse.Content.ReadFromJsonAsync<InventoryItemResponse>();
 
         using var content = new MultipartFormDataContent();

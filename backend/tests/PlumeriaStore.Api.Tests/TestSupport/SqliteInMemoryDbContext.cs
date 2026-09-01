@@ -1,6 +1,7 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using PlumeriaStore.Api.Common.Data;
+using PlumeriaStore.Api.Features.Inventory;
 
 namespace PlumeriaStore.Api.Tests.TestSupport;
 
@@ -26,6 +27,19 @@ public sealed class SqliteInMemoryDbContext : IDisposable
 
         Db = new PlumeriaDbContext(options);
         Db.Database.EnsureCreated();
+
+        // Mirrors CategorySeeder's defaults so InventoryService.GenerateIdAsync has something to
+        // look up - production seeds these at startup, but this fixture never runs that path.
+        Db.Categories.AddRange(
+            new InventoryCategory { Kind = CategoryKind.TYPE, Name = "Cutting", Code = "C" },
+            new InventoryCategory { Kind = CategoryKind.TYPE, Name = "Rooted Plant", Code = "R" },
+            new InventoryCategory { Kind = CategoryKind.COLOR, Name = "Red", Code = "R" },
+            new InventoryCategory { Kind = CategoryKind.COLOR, Name = "Pink", Code = "P" },
+            new InventoryCategory { Kind = CategoryKind.COLOR, Name = "Yellow/White", Code = "Y" },
+            new InventoryCategory { Kind = CategoryKind.SIZE, Name = "Small", Code = "S" },
+            new InventoryCategory { Kind = CategoryKind.SIZE, Name = "Medium", Code = "M" },
+            new InventoryCategory { Kind = CategoryKind.SIZE, Name = "Large", Code = "L" });
+        Db.SaveChanges();
     }
 
     public void Dispose()

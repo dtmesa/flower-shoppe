@@ -15,7 +15,7 @@ namespace PlumeriaStore.Api.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.11");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.11");
 
             modelBuilder.Entity("PlumeriaStore.Api.Features.Auth.AdminUser", b =>
                 {
@@ -39,6 +39,32 @@ namespace PlumeriaStore.Api.Migrations
                     b.ToTable("AdminUsers");
                 });
 
+            modelBuilder.Entity("PlumeriaStore.Api.Features.Inventory.InventoryCategory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Kind", "Name")
+                        .IsUnique();
+
+                    b.ToTable("Categories");
+                });
+
             modelBuilder.Entity("PlumeriaStore.Api.Features.Inventory.InventoryImage", b =>
                 {
                     b.Property<int>("Id")
@@ -52,6 +78,9 @@ namespace PlumeriaStore.Api.Migrations
                     b.Property<string>("InventoryItemId")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsPrimary")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("SortOrder")
                         .HasColumnType("INTEGER");
@@ -81,7 +110,7 @@ namespace PlumeriaStore.Api.Migrations
                         .HasPrecision(10, 2)
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("QuantityAvailable")
+                    b.Property<int>("QuantityTotal")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Size")
@@ -99,7 +128,7 @@ namespace PlumeriaStore.Api.Migrations
                     b.ToTable("InventoryItems");
                 });
 
-            modelBuilder.Entity("PlumeriaStore.Api.Features.Reservations.Reservation", b =>
+            modelBuilder.Entity("PlumeriaStore.Api.Features.Reservations.PickupRequest", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -118,6 +147,23 @@ namespace PlumeriaStore.Api.Migrations
                     b.Property<string>("CustomerPhone")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Notes")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PickupRequests");
+                });
+
+            modelBuilder.Entity("PlumeriaStore.Api.Features.Reservations.Reservation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("InventoryItemId")
                         .HasColumnType("TEXT");
 
@@ -125,18 +171,20 @@ namespace PlumeriaStore.Api.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Notes")
-                        .HasColumnType("TEXT");
+                    b.Property<int>("PickupRequestId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("QuantityRequested")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("Status")
+                    b.Property<bool>("StockReserved")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
                     b.HasIndex("InventoryItemId");
+
+                    b.HasIndex("PickupRequestId");
 
                     b.ToTable("Reservations");
                 });
@@ -159,12 +207,25 @@ namespace PlumeriaStore.Api.Migrations
                         .HasForeignKey("InventoryItemId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("PlumeriaStore.Api.Features.Reservations.PickupRequest", "PickupRequest")
+                        .WithMany("Items")
+                        .HasForeignKey("PickupRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("InventoryItem");
+
+                    b.Navigation("PickupRequest");
                 });
 
             modelBuilder.Entity("PlumeriaStore.Api.Features.Inventory.InventoryItem", b =>
                 {
                     b.Navigation("Images");
+                });
+
+            modelBuilder.Entity("PlumeriaStore.Api.Features.Reservations.PickupRequest", b =>
+                {
+                    b.Navigation("Items");
                 });
 #pragma warning restore 612, 618
         }
