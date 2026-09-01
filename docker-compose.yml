@@ -1,0 +1,21 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    env_file:
+      - backend/.env
+    environment:
+      # Dev-only defaults from appsettings.json - override here (or in backend/.env) before any
+      # real use, same as running locally with `dotnet run`.
+      App__Cors__AllowedOrigins: "http://localhost:5173,https://flower-shoppe.iridebears.workers.dev"
+    volumes:
+      - plumeria-db:/app/db
+      - plumeria-uploads:/app/uploads
+    restart: unless-stopped
+
+volumes:
+  plumeria-db:
+  plumeria-uploads:

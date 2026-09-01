@@ -96,7 +96,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
     {
-        policy.WithOrigins(corsOptions.AllowedOrigin)
+        policy.WithOrigins(corsOptions.Origins)
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials();

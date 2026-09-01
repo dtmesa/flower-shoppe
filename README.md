@@ -71,7 +71,7 @@ Other configurable settings (all optional, see `backend/src/PlumeriaStore.Api/ap
 | `App:Upload:MaxSizeBytes` | Max photo upload size | `5242880` (5MB) |
 | `App:Jwt:Secret` | Signing key for admin session tokens | dev-only default — **set this in production** |
 | `App:Jwt:ExpirationMinutes` | Admin token lifetime | `720` (12h) |
-| `App:Cors:AllowedOrigin` | Allowed frontend origin | `http://localhost:5173` |
+| `App:Cors:AllowedOrigins` | Comma-separated allowed frontend origins | `http://localhost:5173,https://flower-shoppe.iridebears.workers.dev` |
 | `App:Email:Region` | AWS region used for the SES client | `us-west-2` |
 
 ### Email notifications
