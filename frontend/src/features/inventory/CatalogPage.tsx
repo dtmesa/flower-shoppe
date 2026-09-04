@@ -51,9 +51,10 @@ export function CatalogPage() {
     <div className="banner">
       <img src={bannerImage} alt="" className="banner-image" />
       <div className="banner-overlay">
-        <h1>Plumeria, Grown with Care</h1>
+        <h1>Plumeria, From Our Garden to Yours</h1>
         <p>
-          Browse what&apos;s in bloom and reserve your favorites for local pickup in Orange County, CA.
+          Discover what&apos;s currently available and reserve your choices for local pickup in Orange
+          County, CA
         </p>
       </div>
     </div>
