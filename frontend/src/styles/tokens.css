@@ -8,32 +8,63 @@
   --color-primary: #2a7195;
   --color-primary-dark: #1e536f;
   --color-accent: #47a6b0;
-  --color-bg: #436c85;
-  --color-surface: #ffffff;
-  --color-surface-alt: #ecf4f8;
+
+  /* EXPERIMENT (light mode only): white page canvas, with an off-white/blue-tinted shade
+     moved to --color-surface for cards/menus/"bubbles" - barely darker than --color-bg, just
+     enough blue undertone to read as a distinct surface, with black text (below) on top.
+     Revert by restoring the pre-experiment values here (see git history) if this doesn't
+     read well. */
+  --color-bg: #ffffff;
+  --color-surface: #eef3fb;
+  --color-surface-alt: color-mix(in srgb, var(--color-surface) 90%, var(--color-primary) 10%);
+
   --color-text: #1c3444;
   --color-text-muted: #2f4f60;
   --color-border: #d3e3ea;
   --color-success: #2f8f7c;
   --color-danger: #c1503f;
 
-  /* Blue text set against a card/surface background (links, prices) - kept separate from
-     --color-primary-dark's use as a button background, since text needs its own, lighter
-     override in dark mode while the button background should not lighten. */
   --color-link: var(--color-primary-dark);
   --shadow-soft: 0 8px 24px rgba(15, 35, 48, 0.16);
   --radius: 12px;
 
-  /* Text sitting directly on the blue page canvas (not inside a white card/panel)
-     needs its own light palette - the mid-blue background doesn't contrast well
-     against either --color-text or --color-text-muted. */
-  --color-on-bg: #f4f9fb;
-  --color-on-bg-muted: rgba(244, 249, 251, 0.82);
+  /* Text sitting directly on the open page canvas (not inside a card/panel or the
+     header/footer band) - same dark pair as --color-text, since the canvas and the
+     surfaces are both light enough now to share one text palette. */
+  --color-on-bg: var(--color-text);
+  --color-on-bg-muted: var(--color-text-muted);
 
-  /* Header/footer band: a darker shade of the page background rather than a separate
-     surface color, so it reads as one canvas that dips darker at the bands instead of
-     switching palettes. References --color-bg so it stays correct if that's ever retuned. */
-  --color-header: color-mix(in srgb, var(--color-bg) 82%, black 18%);
+  /* Header band. EXPERIMENT: same white as --color-bg (was a darker shade of the brand
+     blue) - --color-on-bg above already resolves dark, so header text reads as
+     black-on-white to match. */
+  --color-header: var(--color-bg);
+
+  /* Hover highlight for icon buttons sitting directly on --color-header (e.g. .logout-button) -
+     computed straight off --color-header itself, same reasoning as --color-modal-hover above
+     (--color-surface-alt is barely visible against a near-white background). */
+  --color-header-hover: color-mix(in srgb, var(--color-header) 82%, black 18%);
+
+  /* Contact-footer background - the off-white/blue --color-surface tint rather than the
+     (now white) --color-header, so it still reads as its own "bubble" section. */
+  --color-footer-bg: var(--color-surface);
+
+  /* Modal panels specifically stay on the plain page background rather than the vivid
+     --color-surface blue used for cards/menus - see .modal-panel in components.css. */
+  --color-modal-bg: var(--color-bg);
+
+  /* Hover highlight for icon buttons sitting directly on --color-modal-bg (e.g. .modal-close) -
+     computed straight off --color-modal-bg itself rather than reusing --color-surface-alt,
+     since that token is tuned against the blue-tinted --color-surface and is barely visible
+     against modal-bg's plain white in light mode. Darkens here; dark mode's override lightens
+     instead (see below), since --color-modal-bg is dark there. 18% (not a lighter touch) so the
+     settled hover state itself reads clearly - too subtle here made the fade-in/fade-out
+     transition's own (more visible) intermediate frame look like an errant flash by comparison. */
+  --color-modal-hover: color-mix(in srgb, var(--color-modal-bg) 82%, black 18%);
+
+  /* Hairline border (.tabs underline, admin header/body divider) - darkened for light mode
+     since the original translucent-white line (still used in dark mode, see below) is barely
+     visible against the now-white/light canvas. */
+  --color-hairline: rgba(28, 52, 68, 0.18);
 
   /* ---- Semantic tokens -------------------------------------------------------------------
      Light-mode values; [data-theme="dark"] near the bottom of this file redefines only the
@@ -63,9 +94,12 @@
   /* Filter checkbox label on hover. */
   --color-filter-label-hover: var(--color-primary);
 
-  /* Stock badge on catalog cards / detail modal. */
+  /* Stock badge on catalog cards / detail modal - "out of stock" (peach/red). "Available for
+     pickup" uses its own yellow pairing below instead of sharing this one. */
   --color-stock-badge-bg: #f6e3e0;
   --color-stock-badge-text: #8f3324;
+  --color-stock-badge-in-bg: #fbf0c9;
+  --color-stock-badge-in-text: #8a6d1a;
 
   /* Generic destructive button (category delete, cart remove). */
   --color-danger-btn-bg: #f8d7d0;
@@ -79,8 +113,9 @@
   --color-form-error-reserved-bg: #f0b3d2;
   --color-form-error-reserved-text: #6b0f42;
 
-  /* Error text shown directly on the blue page canvas rather than in a banner. */
-  --color-state-error-text: #ffd9cf;
+  /* Error text shown directly on the open page canvas rather than in a banner.
+     EXPERIMENT: canvas is now white, so this is the plain danger color. */
+  --color-state-error-text: var(--color-danger);
 
   /* Table row action buttons - their own hue so they don't drag the shared .btn-secondary /
      .btn-danger appearance around with them. */
@@ -95,16 +130,29 @@
 
   /* Pickup-request status pills. Fixed pastel backgrounds in both themes so a status always
      reads the same colour regardless of the surrounding surface. */
-  --color-status-new-bg: #eaf2f7;
-  --color-status-new-text: #4a7086;
-  --color-status-contacted-bg: #e6eefb;
-  --color-status-contacted-text: #34568a;
-  --color-status-confirmed-bg: #ede7f9;
-  --color-status-confirmed-text: #6a4bab;
-  --color-status-completed-bg: #e4f0e6;
+  /* New is neutral gray rather than another pale blue - New/Contacted/Confirmed were all
+     cool-toned pastels close enough in hue and lightness to be hard to tell apart at a glance,
+     especially now that the dropdown's option rows no longer also vary their text color per
+     status (see --color-status-option-text). Saturation bumped up across the rest of these too,
+     for the same reason. */
+  --color-status-new-bg: #e3e7ec;
+  --color-status-new-text: #56626d;
+  /* Halfway between New's neutral gray and Confirmed's purple. */
+  --color-status-contacted-bg: #e3def1;
+  --color-status-contacted-text: #594670;
+  --color-status-confirmed-bg: #e2d4f6;
+  --color-status-confirmed-text: #5b2a92;
+  --color-status-completed-bg: #d2ecd8;
   --color-status-completed-text: var(--color-success);
-  --color-status-cancelled-bg: #f2c7dd;
+  --color-status-cancelled-bg: #f7c9de;
   --color-status-cancelled-text: #7a1a4d;
+
+  /* One consistent text color for the status dropdown's option rows (each tinted with its own
+     --color-status-*-bg pastel above, but sharing this single text color rather than each also
+     switching to its own --color-status-*-text). Fixed rather than tied to --color-text, since
+     these pastel row backgrounds are themselves fixed regardless of theme - a theme-following
+     text color would lose contrast against them in dark mode. */
+  --color-status-option-text: #1c3444;
 
   /* Hover lift strength. Light mode's near-white surfaces have far less headroom than dark
      mode's, so the same multiplier reads as a harsher flash there. */
@@ -118,6 +166,34 @@
 }
 [data-theme="dark"] {
   color-scheme: dark;
+
+  /* Restore the original "header is a darker shade of the page bg" formula for dark mode -
+     the light-mode-only experiment above pegs --color-header to plain white instead. */
+  --color-header: color-mix(in srgb, var(--color-bg) 82%, black 18%);
+
+  /* Contact-footer keeps using the header band color in dark mode, same as before the
+     light-mode footer/surface split introduced --color-footer-bg. */
+  --color-footer-bg: var(--color-header);
+
+  /* Pin dark mode's on-bg pair to their exact original values rather than letting them
+     track --color-text (which would land a shade off from the historical dark-mode hex). */
+  --color-on-bg: #f4f9fb;
+  --color-on-bg-muted: rgba(244, 249, 251, 0.82);
+
+  /* Original translucent-white hairline, unchanged - only light mode needed darkening. */
+  --color-hairline: rgba(244, 249, 251, 0.3);
+
+  /* Modals keep using the card surface color in dark mode, same as before the light-mode
+     modal/surface split introduced --color-modal-bg. */
+  --color-modal-bg: var(--color-surface);
+
+  /* Lightens instead of darkening here, since --color-modal-bg is dark in this theme. */
+  --color-modal-hover: color-mix(in srgb, var(--color-modal-bg) 85%, white 15%);
+
+  /* Dark mode's header band already has enough contrast for --color-surface-alt to read fine
+     against it (unlike light mode's near-white header) - reuse it as-is rather than deriving
+     a second value. */
+  --color-header-hover: var(--color-surface-alt);
 
   --color-bg: #142b39;
   --color-surface: #1b3847;
@@ -141,6 +217,8 @@
 
   --color-stock-badge-bg: #4a2c26;
   --color-stock-badge-text: #f0a99c;
+  --color-stock-badge-in-bg: #4a3f1a;
+  --color-stock-badge-in-text: #e8d27a;
 
   --color-danger-btn-bg: #5a2a20;
   --color-danger-btn-text: #ff7a63;

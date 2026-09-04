@@ -188,13 +188,16 @@ export function InventoryFormModal({ item, onClose, onSaved }: InventoryFormModa
         </div>
         <label>
           Description
-          <textarea
-            rows={3}
-            value={form.description}
-            onChange={(e) => updateField("description", e.target.value)}
-          />
+          <div className="textarea-wrapper">
+            <textarea
+              className="textarea-scroll"
+              rows={3}
+              value={form.description}
+              onChange={(e) => updateField("description", e.target.value)}
+            />
+          </div>
         </label>
-        <button type="submit" className="btn btn-primary" disabled={saving}>
+        <button type="submit" className="btn btn-primary inventory-form-submit" disabled={saving}>
           {saving ? "Saving..." : currentItem ? "Save Changes" : "Create Item"}
         </button>
         <FormError message={error} reserveSpace compact />

@@ -1,4 +1,4 @@
-import { Flower } from "lucide-react";
+import { CircleX, Flower, SquarePen } from "lucide-react";
 import type { InventoryItem } from "../types";
 import { getCoverImage } from "../imageHelpers";
 import { uploadUrl } from "../../../lib/apiClient";
@@ -65,11 +65,23 @@ export function InventoryTable({ items, onEdit, onDelete }: InventoryTableProps)
               </td>
               <td>
                 <div className="table-actions">
-                  <button type="button" className="btn btn-secondary btn-small" onClick={() => onEdit(item)}>
-                    Edit
+                  <button
+                    type="button"
+                    className="row-icon-btn"
+                    onClick={() => onEdit(item)}
+                    aria-label="Edit item"
+                    title="Edit item"
+                  >
+                    <SquarePen size={22} strokeWidth={2} aria-hidden="true" />
                   </button>
-                  <button type="button" className="btn btn-danger btn-small" onClick={() => onDelete(item)}>
-                    Delete
+                  <button
+                    type="button"
+                    className="row-icon-btn"
+                    onClick={() => onDelete(item)}
+                    aria-label="Delete item"
+                    title="Delete item"
+                  >
+                    <CircleX size={22} strokeWidth={2} aria-hidden="true" />
                   </button>
                 </div>
               </td>

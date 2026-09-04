@@ -1,12 +1,7 @@
-import { X } from "lucide-react";
+import { CircleX, Info } from "lucide-react";
 import type { PickupRequest, ReservationStatus } from "../types";
 import { formatDate } from "../../../lib/format";
-
-const STATUS_OPTIONS: ReservationStatus[] = ["NEW", "CONTACTED", "CONFIRMED", "COMPLETED", "CANCELLED"];
-
-function formatStatusLabel(status: ReservationStatus): string {
-  return status.charAt(0) + status.slice(1).toLowerCase();
-}
+import { StatusDropdown } from "./StatusDropdown";
 
 interface ReservationsTableProps {
   reservations: PickupRequest[];
@@ -24,7 +19,7 @@ export function ReservationsTable({
   onDelete,
 }: ReservationsTableProps) {
   if (reservations.length === 0) {
-    return <p className="state-message">No pickup requests yet.</p>;
+    return <p className="state-message state-message--intro">No pickup requests yet.</p>;
   }
 
   return (
@@ -48,39 +43,37 @@ export function ReservationsTable({
               <td>{request.customerName}</td>
               <td>{request.customerEmail || "—"}</td>
               <td>{request.customerPhone || "—"}</td>
-              <td>
-                <select
+              <td className="status-cell">
+                <StatusDropdown
                   value={request.status}
-                  onChange={(event) => {
-                    const status = event.target.value as ReservationStatus;
+                  onChange={(status: ReservationStatus) => {
                     if (status === "COMPLETED") {
                       onCompleteRequest(request);
                     } else {
                       onStatusChange(request.id, status);
                     }
                   }}
-                  className={`status-select status-select--${request.status.toLowerCase()}`}
-                >
-                  {STATUS_OPTIONS.map((status) => (
-                    <option key={status} value={status}>
-                      {formatStatusLabel(status)}
-                    </option>
-                  ))}
-                </select>
+                />
               </td>
-              <td>
+              <td className="table-actions-cell">
                 <div className="table-actions">
-                  <button type="button" className="btn btn-secondary btn-small" onClick={() => onView(request)}>
-                    View Request
+                  <button
+                    type="button"
+                    className="row-icon-btn"
+                    onClick={() => onView(request)}
+                    aria-label="View request"
+                    title="View request"
+                  >
+                    <Info size={22} strokeWidth={2} aria-hidden="true" />
                   </button>
                   <button
                     type="button"
-                    className="row-delete-btn"
+                    className="row-icon-btn"
                     onClick={() => onDelete(request)}
                     aria-label="Delete pickup request"
                     title="Delete pickup request"
                   >
-                    <X size={16} strokeWidth={2.5} aria-hidden="true" />
+                    <CircleX size={22} strokeWidth={2} aria-hidden="true" />
                   </button>
                 </div>
               </td>

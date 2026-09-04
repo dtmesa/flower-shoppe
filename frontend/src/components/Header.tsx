@@ -32,7 +32,7 @@ export function Header() {
   const isAdminRoute = location.pathname.startsWith("/admin");
 
   return (
-    <header className="site-header">
+    <header className={`site-header${isAdminRoute ? " site-header--admin" : ""}`}>
       <div className="site-brand-group">
       <Link to="/" className="site-brand">
         <span className="site-brand-text">

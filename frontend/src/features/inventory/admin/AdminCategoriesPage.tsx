@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { Check, CirclePlus, CircleX, SquarePen, X } from "lucide-react";
 import type { Category, CategoryKind } from "../categoriesApi";
 import { createCategory, deleteCategory, updateCategory, useCategories } from "../categoriesApi";
 import { FormError, useDismissingError } from "../../../components/FormError";
@@ -150,18 +151,22 @@ function CategorySection({ kind, categories, onChanged }: CategorySectionProps) 
                       <div className="table-actions">
                         <button
                           type="button"
-                          className="btn btn-primary btn-small"
+                          className="row-icon-btn"
                           disabled={saving}
                           onClick={() => handleSaveEdit(category.id)}
+                          aria-label="Save changes"
+                          title="Save changes"
                         >
-                          Save
+                          <Check size={22} strokeWidth={2} aria-hidden="true" />
                         </button>
                         <button
                           type="button"
-                          className="btn btn-secondary btn-small"
+                          className="row-icon-btn"
                           onClick={() => setEditingId(null)}
+                          aria-label="Cancel"
+                          title="Cancel"
                         >
-                          Cancel
+                          <X size={22} strokeWidth={2} aria-hidden="true" />
                         </button>
                       </div>
                     </td>
@@ -174,18 +179,22 @@ function CategorySection({ kind, categories, onChanged }: CategorySectionProps) 
                       <div className="table-actions">
                         <button
                           type="button"
-                          className="btn btn-secondary btn-small"
+                          className="row-icon-btn"
                           onClick={() => startEdit(category)}
+                          aria-label="Edit category"
+                          title="Edit category"
                         >
-                          Edit
+                          <SquarePen size={22} strokeWidth={2} aria-hidden="true" />
                         </button>
                         <button
                           type="button"
-                          className="btn btn-danger btn-small"
+                          className="row-icon-btn"
                           disabled={saving}
                           onClick={() => handleDelete(category)}
+                          aria-label="Delete category"
+                          title="Delete category"
                         >
-                          Delete
+                          <CircleX size={22} strokeWidth={2} aria-hidden="true" />
                         </button>
                       </div>
                     </td>
@@ -211,8 +220,14 @@ function CategorySection({ kind, categories, onChanged }: CategorySectionProps) 
           value={newCode}
           onChange={(e) => setNewCode(e.target.value)}
         />
-        <button type="submit" className="btn btn-primary btn-small" disabled={saving}>
-          Add
+        <button
+          type="submit"
+          className="row-icon-btn category-add-btn"
+          disabled={saving}
+          aria-label={`Add ${KIND_LABELS[kind].toLowerCase()}`}
+          title={`Add ${KIND_LABELS[kind].toLowerCase()}`}
+        >
+          <CirclePlus size={28} strokeWidth={2} aria-hidden="true" />
         </button>
       </form>
       <FormError message={error} reserveSpace />
@@ -226,7 +241,7 @@ export function AdminCategoriesPage() {
 
   return (
     <div>
-      <p className="state-message">
+      <p className="state-message state-message--intro">
         These are the type, color, &amp; size options customers filter by and you choose from when
         adding inventory. Each category's code feeds directly into new items' auto-generated ID tags.
       </p>

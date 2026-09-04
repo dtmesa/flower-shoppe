@@ -138,23 +138,26 @@ export function CartModal() {
           </label>
           <label>
             Notes
-            <textarea
-              rows={3}
-              placeholder="Optional: Preferred pickup day, questions, etc."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
+            <div className="textarea-wrapper">
+              <textarea
+                className="textarea-scroll"
+                rows={3}
+                placeholder="Optional: Preferred pickup day, questions, etc."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+            </div>
           </label>
           <FormError message={error} reserveSpace tight />
           <div className="cart-checkout-summary">
             {itemCount} {itemCount === 1 ? "item" : "items"} · {formatPrice(totalValue)}
           </div>
           <div className="cart-checkout-actions">
-            <button type="button" className="btn btn-secondary" onClick={() => setView("cart")}>
-              Back to cart
-            </button>
             <button type="submit" className="btn btn-primary" disabled={submitting}>
               {submitting ? "Sending..." : "Send Request"}
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={() => setView("cart")}>
+              Back to Cart
             </button>
           </div>
         </form>

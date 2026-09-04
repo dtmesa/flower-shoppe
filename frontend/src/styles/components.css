@@ -10,6 +10,13 @@
   z-index: 10;
 }
 
+/* Admin side only, light mode only: the header is the same white as the page body now, so
+   it needs a hairline to separate it from the body instead of the color change alone doing
+   that job (as it still does on the customer-facing blue-band header). */
+[data-theme="light"] .site-header--admin {
+  border-bottom: 1px solid var(--color-hairline);
+}
+
 .site-brand-group {
   display: flex;
   align-items: baseline;
@@ -31,12 +38,12 @@
   border: none;
   padding: 0;
   font-family: var(--font-body);
-  font-size: 0.95rem;
-  font-weight: 400;
+  font-size: 0.9rem;
+  font-weight: 500;
   color: var(--color-on-bg-muted);
   text-decoration: none;
   cursor: pointer;
-  transition: transform 0.2s ease, opacity 0.1s ease;
+  transition: transform 0.15s ease, opacity 0.1s ease;
 }
 
 .site-subheader-link:hover:not(:disabled):not(:active) {
@@ -44,7 +51,7 @@
 }
 
 .site-subheader-link:hover:not(:disabled):not(:active) {
-  transform: scale(1.03);
+  transform: scale(1.02);
 }
 
 .site-brand-text {
@@ -86,11 +93,30 @@
 .logout-button {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
   background: none;
   border: none;
   padding: 0;
   cursor: pointer;
   color: var(--color-on-bg);
+  transition: background-color 0.15s ease;
+}
+
+/* --color-surface-alt is a near-white tint, not visible enough against --color-header (also
+   near-white in light mode) once the hover transition settles - the transition's intermediate
+   (more visible) frame made the final, barely-there result look like it was "flashing and
+   disappearing". --color-header-hover is calibrated against --color-header itself instead. */
+.logout-button:hover:not(:disabled):not(:active) {
+  background: var(--color-header-hover);
+}
+
+/* Deeper press shrink than the generic button:active scale(0.975) - wins on specificity
+   (class+pseudo beats type+pseudo) regardless of source order. */
+.logout-button:active {
+  transform: scale(0.85);
 }
 
 /* Floating action button, fixed to the bottom-right corner of the viewport on every page. */
@@ -142,7 +168,7 @@
 }
 
 .logout-button:hover svg {
-  transform: scale(1.03);
+  transform: scale(1.05);
 }
 
 /* Cart */
@@ -171,7 +197,7 @@
 }
 
 .cart-icon svg {
-  transition: transform 0.2s ease;
+  transition: transform 0.15s ease;
 }
 
 .cart-trigger:hover .cart-icon svg {
@@ -392,7 +418,7 @@
 }
 
 .contact-footer {
-  background: var(--color-header);
+  background: var(--color-footer-bg);
   padding: 3rem 1.5rem;
 }
 
@@ -416,21 +442,21 @@
   justify-content: center;
   flex-wrap: wrap;
   gap: 0.75rem 2rem;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-on-bg);
 }
 
-.banner-overlay h1,
-.banner-overlay p {
-  color: #fff;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
-}
-
 .banner-overlay h1 {
-  margin-bottom: 0.15em;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  margin-bottom: 0.05em;
 }
 
 .banner-overlay p {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
   margin-top: 0;
 }
 
@@ -449,6 +475,13 @@
    token there instead. */
 .modal-body .state-message {
   color: var(--color-text-muted);
+}
+
+/* Category-page intro blurb - same base look as .state-message, just italicized with a
+   tighter gap above/below instead of the generic empty/loading-state padding. */
+.state-message--intro {
+  padding: 0.5rem 0;
+  font-style: italic;
 }
 
 .state-message--compact {
@@ -685,6 +718,13 @@ input, select, textarea {
   transition: border-color 0.2s ease;
 }
 
+input::placeholder,
+textarea::placeholder {
+  font-style: italic;
+  color: var(--color-text-muted);
+  opacity: 0.65;
+}
+
 /* Edge (and Chromium behind a flag) draw their own reveal "eye" and clear "x" controls inside
    password inputs. Every password field here already ships a custom .password-toggle sitting in
    that same reserved right-hand gutter, so the native pair has to go or the two overlap. */
@@ -725,30 +765,17 @@ input[type="password"]::-ms-clear {
    Recolors the existing hairline border (no width change) plus a faint background tint, instead
    of a separate outline ring stacked on top of it. */
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(:disabled):hover,
-select:not(.status-select):not(:disabled):hover,
+select:not(:disabled):hover,
 textarea:not(:disabled):hover {
   background-color: var(--color-surface-alt);
 }
 
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(:disabled):focus,
-select:not(.status-select):not(:disabled):focus,
+select:not(:disabled):focus,
 textarea:not(:disabled):focus {
   outline: none;
   border-color: var(--color-accent);
   background-color: var(--color-surface-alt);
-}
-
-/* .status-select carries its own pastel background+text per status (see .status-select--* below)
-   - the generic select hover/focus above would otherwise override it (a pseudo-class pushes an
-   element selector's specificity above a single class), swapping every status to the same tinted
-   look and a blue focus border regardless of its actual color. Highlight without touching hue,
-   and leave press/focus completely alone so the resting color always holds. */
-.status-select:hover {
-  filter: brightness(var(--hover-brightness-status));
-}
-
-.status-select:focus {
-  outline: none;
 }
 
 input[type="checkbox"]:focus-visible,
@@ -823,9 +850,11 @@ input[type="radio"]:focus-visible {
   left: 0.5rem;
 }
 
-/* Both variants share a colour deliberately: the catalog filters out-of-stock items out
-   entirely, so the "--out" case is effectively unreachable there. */
-.stock-badge--in,
+.stock-badge--in {
+  background: var(--color-stock-badge-in-bg);
+  color: var(--color-stock-badge-in-text);
+}
+
 .stock-badge--out {
   background: var(--color-stock-badge-bg);
   color: var(--color-stock-badge-text);
@@ -890,6 +919,12 @@ input[type="radio"]:focus-visible {
   font-size: 0.85rem;
 }
 
+.inventory-form-submit {
+  align-self: flex-start;
+  padding-left: 0.7rem;
+  padding-right: 0.7rem;
+}
+
 
 /* Modal */
 .modal-backdrop {
@@ -906,7 +941,7 @@ input[type="radio"]:focus-visible {
 }
 
 .modal-panel {
-  background: var(--color-surface);
+  background: var(--color-modal-bg);
   border-radius: var(--radius);
   max-width: 480px;
   width: 100%;
@@ -939,12 +974,18 @@ input[type="radio"]:focus-visible {
 }
 
 .modal-close {
-  background: none;
-  border: none;
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+  border-radius: 999px;
+  background: none;
   cursor: pointer;
   color: var(--color-text-muted);
   padding: 0;
+  transition: transform 0.15s ease, opacity 0.1s ease, background-color 0.15s ease;
 }
 
 /* Detail view */
@@ -1042,6 +1083,7 @@ input[type="radio"]:focus-visible {
   padding: 0.6rem 0.8rem;
   border-radius: 8px;
   font-size: 0.9rem;
+  font-weight: 500;
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -1192,11 +1234,16 @@ input[type="radio"]:focus-visible {
   background: var(--color-photo-remove-bg);
   color: var(--color-photo-remove-text);
   cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.1s ease;
 }
 
 .image-manager-remove-btn:disabled {
   cursor: not-allowed;
   filter: brightness(0.6);
+}
+
+.image-manager-remove-btn:hover:not(:disabled):not(:active) {
+  transform: scale(1.03);
 }
 
 /* Wins over the generic button:active opacity dip (class+pseudo beats type+pseudo) - darkens
@@ -1252,15 +1299,15 @@ input[type="radio"]:focus-visible {
 .tabs {
   display: flex;
   gap: 0.5rem;
-  border-bottom: 1px solid rgba(244, 249, 251, 0.3);
+  border-bottom: 1px solid var(--color-hairline);
   margin-bottom: 1.5rem;
 }
 
 .tab {
   background: none;
   border: none;
-  padding: 0.7rem 0.2rem;
-  margin-right: 1.5rem;
+  padding: 0.7rem 1rem;
+  margin-right: 1rem;
   cursor: pointer;
   font-weight: 600;
   color: var(--color-on-bg-muted);
@@ -1269,11 +1316,14 @@ input[type="radio"]:focus-visible {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  transition: color 0.15s ease, gap 0.15s ease;
+  transition: color 0.15s ease, gap 0.15s ease, background-color 0.15s ease;
 }
 
+/* --color-surface-alt is a step lighter than the canvas in dark mode and a step darker in
+   light mode, so this reads as a highlight in both without needing a per-theme override. */
 .tab:hover {
   color: var(--color-on-bg);
+  background-color: var(--color-surface-alt);
   gap: 0.55rem;
 }
 
@@ -1342,6 +1392,7 @@ input[type="radio"]:focus-visible {
   color: var(--color-icon-circle-text);
   cursor: pointer;
   box-shadow: var(--shadow-soft);
+  transition: transform 0.15s ease, opacity 0.1s ease;
 }
 
 /* It straddles two different backgrounds (the page canvas above, the table surface below), so
@@ -1352,6 +1403,10 @@ input[type="radio"]:focus-visible {
   transform: scale(0.95);
   opacity: 1;
   filter: brightness(0.8);
+}
+
+.btn-icon-circle:hover:not(:disabled):not(:active) {
+  transform: scale(1.03);
 }
 
 /* Centered directly on the table's top-right corner bend instead of sitting in its own row
@@ -1416,6 +1471,48 @@ input[type="radio"]:focus-visible {
   background-color: var(--color-primary-dark);
 }
 
+/* Description/notes textareas - same custom-scrollbar treatment as .table-wrapper/.table-scroll
+   above, just vertical instead of horizontal. The rounded corners/border live on this wrapper
+   (with overflow:hidden) rather than on the textarea itself, for the same reason as the table:
+   Chromium won't clip a native scrollbar to border-radius on the element that owns it. */
+.textarea-wrapper {
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.textarea-wrapper:focus-within {
+  border-color: var(--color-accent);
+}
+
+.textarea-scroll {
+  display: block;
+  width: 100%;
+  border: none;
+  border-radius: 0;
+  scrollbar-color: var(--color-primary) var(--color-surface-alt);
+  scrollbar-width: thin;
+}
+
+.textarea-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.textarea-scroll::-webkit-scrollbar-track {
+  background: var(--color-surface-alt);
+}
+
+.textarea-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--color-primary);
+  border-radius: 999px;
+  border: 2px solid var(--color-surface-alt);
+}
+
+.textarea-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-primary-dark);
+}
+
 .category-sections {
   display: flex;
   flex-direction: column;
@@ -1431,8 +1528,17 @@ input[type="radio"]:focus-visible {
 
 .category-add-form {
   display: flex;
+  align-items: center;
   gap: 0.5rem;
   margin-top: 0.75rem;
+}
+
+/* Bigger than the row-level .row-icon-btn instances (edit/delete) - this one sits alongside
+   full-height text inputs rather than in a compact table row. */
+.category-add-btn {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
 }
 
 .category-add-form input {
@@ -1524,57 +1630,158 @@ tbody tr:last-child td {
   gap: 0.5rem;
 }
 
-/* Row action buttons get their own hue rather than the shared .btn-secondary / .btn-danger
-   look, which is also used by non-table buttons (cart "Back", image upload) that should stay
-   as they are. Declared after those base rules so the single-class .restore-stock-btn still
-   wins on source order. */
-.table-actions .btn-secondary,
+/* Pickup requests only - the icon-only view/delete buttons don't need the same generous
+   horizontal breathing room the default td padding gives text/dropdown cells. */
+.table-actions-cell {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.status-cell {
+  padding-right: 0.2rem;
+}
+
 .restore-stock-btn {
   background: var(--color-action-edit-bg);
   color: var(--color-action-edit-text);
 }
 
-.table-actions .btn-danger {
-  background: var(--color-action-delete-bg);
-  color: var(--color-action-delete-text);
-}
-
-.row-delete-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: none;
-  flex-shrink: 0;
+/* Pickup-requests row actions - both share one neutral look rather than the edit/delete hue
+   split above, since they're icon-only (view vs. delete) and don't need color to distinguish
+   them from each other the way a pair of same-looking text buttons would. */
+.row-icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-action-delete-bg);
-  color: var(--color-action-delete-text);
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: var(--color-text-muted);
   cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.1s ease;
 }
 
-.row-delete-btn:disabled {
-  cursor: not-allowed;
-  filter: brightness(0.6);
+.row-icon-btn:hover:not(:disabled):not(:active) {
+  background: var(--color-surface-alt);
+  color: var(--color-text);
+  transform: scale(1.05);
 }
 
-.status-select {
+/* Bespoke replacement for the pickup-request status <select> - a native select's open listbox
+   is OS-rendered and ignores border-radius (and most other CSS), so this is a real button+popup
+   we own instead, restyled to match the same pill look. The .status-select--* modifiers below
+   (fixed pastel background+text per status, same in both themes) are shared between the trigger
+   button and each option in the popup. */
+.status-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.status-dropdown-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  min-width: 7.5rem;
+  border: none;
   border-radius: 999px;
   font-weight: 600;
   font-size: 0.8rem;
-  padding: 0.3rem 1.35rem 0.3rem 0.6rem;
-  min-width: 7.5rem;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  /* Every status pill keeps the same fixed light pastel background regardless of theme (see the
-     modifier rules below), so one dark, neutral chevron color reads fine against all of them -
-     no per-mode override needed. Nudged in from the edge (0.6rem, vs. a native arrow that sits
-     flush right) per request to feel less right-aligned. */
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%2333475a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>");
-  background-repeat: no-repeat;
-  background-position: right 0.6rem center;
-  background-size: 9px;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+}
+
+.status-dropdown-chevron {
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+
+.status-dropdown-trigger[aria-expanded="true"] .status-dropdown-chevron {
+  transform: rotate(180deg);
+}
+
+/* Same gentler lift as the pastel pickup-request pills used elsewhere - the generic
+   button:hover brightness is tuned for solid-color buttons and reads too harsh against these. */
+.status-dropdown-trigger:hover:not(:disabled):not(:active) {
+  filter: brightness(var(--hover-brightness-status));
+}
+
+/* The popup itself - unlike a native listbox, this can actually have rounded corners. Sits on
+   --color-modal-bg (plain page background) rather than --color-surface so it reads as its own
+   floated panel instead of blending into a card underneath it. Portaled to <body> and positioned
+   via top/left set inline from the trigger's own getBoundingClientRect() (see StatusDropdown.tsx)
+   rather than being an absolutely-positioned child of .status-dropdown - the table it lives in
+   clips overflow for its own rounded corners/scrollbar (.table-wrapper/.table-scroll), which would
+   otherwise cut the menu off whenever the table is short. */
+.status-dropdown-menu {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--color-modal-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+}
+
+/* No padding around the list, so the first/last row's own pastel fill reaches the menu's
+   corners - rounded to match rather than left square and clipped by the container's own
+   overflow:hidden, which left a visible seam where the row's fill met the curve. */
+.status-dropdown-menu li:first-child .status-dropdown-option {
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.status-dropdown-menu li:last-child .status-dropdown-option {
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+/* Plain, borderless row (no pill shape, no radius, no gap between rows - separated by the
+   hairline above instead) - background still comes from the shared .status-select--* modifiers
+   below, but the .status-dropdown-option.status-select--* pairing (two classes, so it wins on
+   specificity regardless of source order) overrides their per-status `color` with one consistent
+   value, since every row here shares a single text color rather than each also switching hue. */
+.status-dropdown-option {
+  display: block;
+  width: 100%;
+  border: none;
+  font-weight: 400;
+  font-size: 0.85rem;
+  text-align: left;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  transition: transform 0.1s ease, opacity 0.1s ease, filter 0.15s ease;
+}
+
+.status-dropdown-option.status-select--new,
+.status-dropdown-option.status-select--contacted,
+.status-dropdown-option.status-select--confirmed,
+.status-dropdown-option.status-select--completed,
+.status-dropdown-option.status-select--cancelled {
+  color: var(--color-status-option-text);
+}
+
+.status-dropdown-option-label {
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+
+.status-dropdown-option--active {
+  font-weight: 600;
+}
+
+/* Same gentler lift as the trigger pill and the pickup-request status pills elsewhere - each
+   row already carries a solid pastel fill, so the lift (not a background swap) is what reads as
+   "highlighted" here. */
+.status-dropdown-option:hover:not(:disabled):not(:active) {
+  filter: brightness(var(--hover-brightness-status));
+}
+
+.status-dropdown-option:hover:not(:disabled):not(:active) .status-dropdown-option-label {
+  transform: scale(1.03);
 }
 
 .status-select--new {
@@ -1650,19 +1857,24 @@ tbody tr:last-child td {
    system preference as a fallback the first time), so plain attribute selectors are enough; no
    media query is needed here any more. */
 
-/* These four buttons/pills each want a different hover strength than the generic
+/* These three buttons/pills each want a different hover strength than the generic
    `button:hover` lift, and the right strength differs per theme - so the selector lives here
    once and the per-theme value comes from a token. Specificity (0,4,0 with the :not()s) beats
    the generic button rule regardless of source order. */
 .btn-secondary:hover:not(:disabled):not(:active),
-.btn-danger:hover:not(:disabled):not(:active),
-.row-delete-btn:hover:not(:disabled):not(:active) {
+.btn-danger:hover:not(:disabled):not(:active) {
   filter: brightness(var(--hover-brightness));
 }
 
-/* .modal-close's muted mid-tone barely moves under the generic lift, so it gets a stronger one. */
+/* No filter here (unlike most other hover states) - .modal-close sits inside .modal-backdrop's
+   backdrop-filter: blur(), and stacking a filter on top of that caused Chromium to only repaint
+   the hover background on mouseOUT instead of on hover (briefly flashing the right color, then
+   reverting until the cursor left). The background/color swap below is strong enough feedback
+   on its own now anyway. */
 .modal-close:hover:not(:disabled):not(:active) {
-  filter: brightness(var(--hover-brightness-strong));
+  background: var(--color-modal-hover);
+  color: var(--color-text);
+  transform: scale(1.03);
 }
 
 /* ---- Dark-theme component overrides --------------------------------------------------------

@@ -99,7 +99,7 @@ export function AdminAccountPage() {
 
   return (
     <div className="admin-account-page">
-      <p className="state-message">Update the username and password used to log in to this dashboard.</p>
+      <p className="state-message state-message--intro">Update the username and password used to log in to this dashboard.</p>
       {success && <p className="state-message">Credentials updated.</p>}
       <form className="form" onSubmit={handleSubmit} noValidate>
         <label>
