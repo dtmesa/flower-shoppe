@@ -8,3 +8,9 @@ Thumbs.db
 
 # Claude Code local settings (personal/machine-specific, not shared)
 .claude/settings.local.json
+
+# Cloudflare Tunnel credentials (secret)
+cloudflared/
+
+# Environment secrets
+backend/.env

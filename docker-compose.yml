@@ -16,6 +16,17 @@ services:
       - plumeria-uploads:/app/uploads
     restart: unless-stopped
 
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel run
+    volumes:
+      - ./cloudflared:/etc/cloudflared
+    environment:
+      TUNNEL_CONFIG: /etc/cloudflared/config.yml
+    depends_on:
+      - backend
+    restart: unless-stopped
+
 volumes:
   plumeria-db:
   plumeria-uploads:
