@@ -53,7 +53,7 @@ function CategorySection({ kind, categories, onChanged }: CategorySectionProps) 
     setError(null);
 
     if (!newName.trim() || !newCode.trim()) {
-      setError("Name and code are required.");
+      setError("Name and code are required");
       return;
     }
 

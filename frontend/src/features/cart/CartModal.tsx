@@ -41,25 +41,25 @@ export function CartModal() {
     setError(null);
 
     if (!customerName.trim()) {
-      setError("Enter your name.");
+      setError("Enter your name");
       shakeFields(nameInputRef.current);
       return;
     }
 
     if (!customerPhone.trim() && !customerEmail.trim()) {
-      setError("Provide a phone number or email address so we can reach you.");
+      setError("Provide a phone number or email address so we can reach you");
       shakeFields(phoneInputRef.current, emailInputRef.current);
       return;
     }
 
     if (customerPhone.trim() && !isCompletePhone(customerPhone)) {
-      setError("Enter a 10-digit phone number, e.g. (555) 123-4567.");
+      setError("Enter a 10-digit phone number, e.g. (555) 123-4567");
       shakeFields(phoneInputRef.current);
       return;
     }
 
     if (customerEmail.trim() && !EMAIL_PATTERN.test(customerEmail.trim())) {
-      setError("Enter a valid email address.");
+      setError("Enter a valid email address");
       shakeFields(emailInputRef.current);
       return;
     }

@@ -76,7 +76,7 @@ export function InventoryFormModal({ item, onClose, onSaved }: InventoryFormModa
     }
 
     if (form.price <= 0) {
-      setError("Price must be greater than 0.");
+      setError("Price must be greater than 0");
       setInvalidFields(new Set(["price"]));
       return;
     }

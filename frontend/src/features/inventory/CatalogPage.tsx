@@ -12,7 +12,23 @@ const GRID_FADE_OUT_MS = 300;
 
 export function CatalogPage() {
   const { items: allItems, error, isLoading } = useInventory();
-  const items = useMemo(() => allItems.filter((item) => item.quantityAvailable > 0), [allItems]);
+
+  // Grouped by colour so the grid reads in the same order as the sidebar's colour filters - the
+  // API returns categories sorted by a "{kind}#{name}" key, so alphabetical here matches that
+  // list however many colours get added later. Items with no colour sort last, and the sort is
+  // stable, so items sharing a colour keep the order the API sent them in.
+  const items = useMemo(
+    () =>
+      allItems
+        .filter((item) => item.quantityAvailable > 0)
+        .sort((a, b) => {
+          if (a.color === b.color) return 0;
+          if (!a.color) return 1;
+          if (!b.color) return -1;
+          return a.color.localeCompare(b.color);
+        }),
+    [allItems],
+  );
 
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
