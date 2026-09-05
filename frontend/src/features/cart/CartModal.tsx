@@ -106,7 +106,7 @@ export function CartModal() {
   if (view === "checkout") {
     return (
       <Modal title="Request for Pickup" onClose={handleClose} wide>
-        <form className="form" onSubmit={handleSubmit} noValidate>
+        <form className="form cart-checkout-form form--medium-labels" onSubmit={handleSubmit} noValidate>
           <label>
             Your Name
             <input
@@ -148,7 +148,7 @@ export function CartModal() {
               />
             </div>
           </label>
-          <FormError message={error} reserveSpace tight />
+          <FormError message={error} prominent />
           <div className="cart-checkout-summary">
             {itemCount} {itemCount === 1 ? "item" : "items"} · {formatPrice(totalValue)}
           </div>
@@ -213,7 +213,7 @@ export function CartModal() {
           <div className="cart-checkout-summary">
             Total: {itemCount} {itemCount === 1 ? "item" : "items"} · {formatPrice(totalValue)}
           </div>
-          <button type="button" className="btn btn-primary" onClick={() => setView("checkout")}>
+          <button type="button" className="btn btn-primary cart-request-btn" onClick={() => setView("checkout")}>
             Request for Pickup
           </button>
         </>

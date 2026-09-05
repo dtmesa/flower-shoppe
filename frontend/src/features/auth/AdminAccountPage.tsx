@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "./AuthContext";
 import { updateCredentials } from "./authApi";
-import { FormError, useDismissingError } from "../../components/FormError";
+import { FormError, FormSuccess, useDismissingError } from "../../components/FormError";
 import { extractErrorMessage } from "../../lib/apiClient";
 
 interface PasswordFieldProps {
@@ -45,7 +45,7 @@ export function AdminAccountPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useDismissingError();
   const [invalidFields, setInvalidFields] = useState<Set<string>>(new Set());
-  const [success, setSuccess] = useState(false);
+  const [success, setSuccess] = useDismissingError();
 
   // The field highlights exist only to point at the current error, so they clear alongside it
   // when the shared hook's auto-dismiss timer fires.
@@ -57,7 +57,7 @@ export function AdminAccountPage() {
     event.preventDefault();
     setError(null);
     setInvalidFields(new Set());
-    setSuccess(false);
+    setSuccess(null);
 
     if (!currentPassword) {
       setError("Current password is required.");
@@ -65,13 +65,35 @@ export function AdminAccountPage() {
       return;
     }
 
-    if (newPassword && newPassword !== confirmPassword) {
-      setError("New password and confirmation do not match.");
-      setInvalidFields(new Set(["newPassword", "confirmPassword"]));
+    // The current password authorizes a change; it isn't a change in itself. Without this, a
+    // submission carrying only that field sent the existing username straight back and reported
+    // success for having done nothing.
+    const newUsernameTrimmed = newUsername.trim();
+    const changingPassword = Boolean(newPassword || confirmPassword);
+
+    if (!newUsernameTrimmed && !changingPassword) {
+      setError("Enter a new username or a new password.");
+      setInvalidFields(new Set(["newUsername", "newPassword"]));
       return;
     }
 
-    const usernameToSend = newUsername.trim() || username;
+    if (changingPassword) {
+      // One of the pair filled but not the other - point at whichever is still empty.
+      if (!newPassword || !confirmPassword) {
+        setError("Enter the new password twice to confirm it.");
+        setInvalidFields(new Set([newPassword ? "confirmPassword" : "newPassword"]));
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        setError("New password and confirmation do not match.");
+        setInvalidFields(new Set(["newPassword", "confirmPassword"]));
+        return;
+      }
+    }
+
+    // The API always wants a username; when only the password is changing, that's the current one.
+    const usernameToSend = newUsernameTrimmed || username;
     if (!usernameToSend) {
       setError("Could not determine the current username - try reloading the page.");
       return;
@@ -82,14 +104,14 @@ export function AdminAccountPage() {
       const response = await updateCredentials({
         currentPassword,
         newUsername: usernameToSend,
-        newPassword: newPassword || undefined,
+        newPassword: changingPassword ? newPassword : undefined,
       });
       applySession(response.token, response.username);
       setNewUsername("");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      setSuccess(true);
+      setSuccess("Credentials updated.");
     } catch (err) {
       setError(extractErrorMessage(err));
     } finally {
@@ -100,12 +122,12 @@ export function AdminAccountPage() {
   return (
     <div className="admin-account-page">
       <p className="state-message state-message--intro">Update the username and password used to log in to this dashboard.</p>
-      {success && <p className="state-message">Credentials updated.</p>}
-      <form className="form" onSubmit={handleSubmit} noValidate>
+      <form className="form form--medium-labels" onSubmit={handleSubmit} noValidate>
         <label>
           Username
           <input
             type="text"
+            className={invalidFields.has("newUsername") ? "field-invalid" : undefined}
             placeholder="Leave blank to keep your current username"
             value={newUsername}
             onChange={(e) => setNewUsername(e.target.value)}
@@ -140,7 +162,8 @@ export function AdminAccountPage() {
           {saving ? "Saving..." : "Update"}
         </button>
       </form>
-      <FormError message={error} reserveSpace />
+      <FormError message={error} prominent />
+      <FormSuccess message={success} prominent />
     </div>
   );
 }

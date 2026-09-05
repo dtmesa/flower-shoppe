@@ -5,19 +5,31 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>PlumeriaStore.Api</RootNamespace>
+
+    <!-- Published as a Native AOT binary for AWS Lambda (see backend/Dockerfile): a cold start on
+         a low-traffic storefront is the dominant latency, and AOT turns ~1.5s of JIT/startup into
+         ~150ms. The cost is that reflection-heavy libraries are off the table - hence source-
+         generated JSON, hand-written request validation, and no Swashbuckle. -->
+    <PublishAot>true</PublishAot>
+    <TrimMode>full</TrimMode>
+    <StripSymbols>true</StripSymbols>
+
+    <!-- Lambda's provided.al2023 runtime ships no ICU. Culture-sensitive behavior here is limited
+         to formatting an email timestamp, so invariant mode is a fair trade for not bundling it.
+         Timezone data is separate from ICU and still resolves (with a fallback - see
+         EmailNotificationService). -->
+    <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.SimpleEmailV2" Version="4.0.103.1" />
+    <PackageReference Include="Amazon.Lambda.AspNetCoreServer.Hosting" Version="2.2.1" />
+    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="3.0.1" />
+    <PackageReference Include="AWSSDK.DynamoDBv2" Version="4.0.103.5" />
+    <PackageReference Include="AWSSDK.S3" Version="4.0.102.4" />
+    <PackageReference Include="AWSSDK.SimpleEmailV2" Version="4.0.104" />
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="DotNetEnv" Version="3.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.11" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.11" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
   </ItemGroup>
 
 </Project>

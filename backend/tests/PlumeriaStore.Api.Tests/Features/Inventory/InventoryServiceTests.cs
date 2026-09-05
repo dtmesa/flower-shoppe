@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Options;
 using PlumeriaStore.Api.Common.Errors;
-using PlumeriaStore.Api.Common.Options;
 using PlumeriaStore.Api.Features.Inventory;
 using PlumeriaStore.Api.Features.Reservations;
 using PlumeriaStore.Api.Tests.TestSupport;
@@ -10,14 +8,12 @@ namespace PlumeriaStore.Api.Tests.Features.Inventory;
 
 public class InventoryServiceTests : IDisposable
 {
-    private readonly SqliteInMemoryDbContext _fixture = new();
-    private readonly string _uploadDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+    private readonly PlumeriaTestContext _context = new();
     private readonly InventoryService _service;
 
     public InventoryServiceTests()
     {
-        var fileStorageService = new FileStorageService(Options.Create(new UploadOptions { Directory = _uploadDir }));
-        _service = new InventoryService(_fixture.Db, fileStorageService);
+        _service = _context.NewInventoryService();
     }
 
     private static InventoryItemCreateRequest ValidCreateRequest() =>
@@ -73,7 +69,7 @@ public class InventoryServiceTests : IDisposable
     /// <summary>Confirms a pickup request for <paramref name="quantity"/> of the item, placing a hold.</summary>
     private async Task HoldStockAsync(string itemId, int quantity)
     {
-        var reservations = new ReservationService(_fixture.Db, NoopEmailNotificationService.Create());
+        var reservations = _context.NewReservationService();
         var request = await reservations.CreateAsync(new PickupRequestCreateRequest(
             "Jane", null, "jane@example.com", null, [new PickupRequestLineItemInput(itemId, quantity)]));
         await reservations.UpdateStatusAsync(request.Id, ReservationStatus.CONFIRMED);
@@ -244,12 +240,5 @@ public class InventoryServiceTests : IDisposable
         Assert.True(Assert.Single(afterDelete.Images, img => img.Id == secondImageId).IsPrimary);
     }
 
-    public void Dispose()
-    {
-        _fixture.Dispose();
-        if (Directory.Exists(_uploadDir))
-        {
-            Directory.Delete(_uploadDir, recursive: true);
-        }
-    }
+    public void Dispose() => _context.Dispose();
 }

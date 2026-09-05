@@ -7,12 +7,12 @@ namespace PlumeriaStore.Api.Tests.Features.Reservations;
 
 public class ReservationServiceTests : IDisposable
 {
-    private readonly SqliteInMemoryDbContext _fixture = new();
+    private readonly PlumeriaTestContext _context = new();
     private readonly ReservationService _service;
 
     public ReservationServiceTests()
     {
-        _service = new ReservationService(_fixture.Db, NoopEmailNotificationService.Create());
+        _service = _context.NewReservationService();
     }
 
     private async Task<string> SeedItemAsync(string id = "TAG-001", int quantityTotal = 5)
@@ -28,8 +28,7 @@ public class ReservationServiceTests : IDisposable
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
         };
-        _fixture.Db.InventoryItems.Add(item);
-        await _fixture.Db.SaveChangesAsync();
+        await _context.Items.SaveAsync(item);
         return item.Id;
     }
 
@@ -179,11 +178,14 @@ public class ReservationServiceTests : IDisposable
 
         Assert.True(confirmed.StockReserved);
         // Every line takes a hold...
-        var lines = _fixture.Db.Reservations.Where(line => line.PickupRequestId == request.Id).ToList();
-        Assert.All(lines, line => Assert.True(line.StockReserved));
+        var stored = await _context.Requests.FindByIdAsync(request.Id);
+        Assert.All(stored!.Items, line => Assert.True(line.StockReserved));
+        // ...and the items count those units as reserved...
+        Assert.Equal(2, (await _context.Items.FindByIdAsync(itemId1))!.QuantityReserved);
+        Assert.Equal(1, (await _context.Items.FindByIdAsync(itemId2))!.QuantityReserved);
         // ...but on-hand totals only move when the request is completed.
-        Assert.Equal(5, (await _fixture.Db.InventoryItems.FindAsync(itemId1))!.QuantityTotal);
-        Assert.Equal(5, (await _fixture.Db.InventoryItems.FindAsync(itemId2))!.QuantityTotal);
+        Assert.Equal(5, (await _context.Items.FindByIdAsync(itemId1))!.QuantityTotal);
+        Assert.Equal(5, (await _context.Items.FindByIdAsync(itemId2))!.QuantityTotal);
     }
 
     [Fact]
@@ -196,8 +198,9 @@ public class ReservationServiceTests : IDisposable
         var cancelled = await _service.UpdateStatusAsync(request.Id, ReservationStatus.CANCELLED);
 
         Assert.False(cancelled.StockReserved);
-        var item = await _fixture.Db.InventoryItems.FindAsync(itemId);
+        var item = await _context.Items.FindByIdAsync(itemId);
         Assert.Equal(5, item!.QuantityTotal);
+        Assert.Equal(0, item.QuantityReserved);
     }
 
     [Fact]
@@ -211,8 +214,9 @@ public class ReservationServiceTests : IDisposable
 
         Assert.Equal(ReservationStatus.COMPLETED, completed.Status);
         Assert.False(completed.StockReserved);
-        var item = await _fixture.Db.InventoryItems.FindAsync(itemId);
+        var item = await _context.Items.FindByIdAsync(itemId);
         Assert.Equal(3, item!.QuantityTotal);
+        Assert.Equal(0, item.QuantityReserved);
     }
 
     [Fact]
@@ -226,8 +230,9 @@ public class ReservationServiceTests : IDisposable
 
         Assert.Equal(ReservationStatus.COMPLETED, completed.Status);
         Assert.False(completed.StockReserved);
-        var item = await _fixture.Db.InventoryItems.FindAsync(itemId);
+        var item = await _context.Items.FindByIdAsync(itemId);
         Assert.Equal(5, item!.QuantityTotal);
+        Assert.Equal(0, item.QuantityReserved);
     }
 
     [Fact]
@@ -239,7 +244,7 @@ public class ReservationServiceTests : IDisposable
         var completed = await _service.CompleteAsync(request.Id, permanentlyClear: true);
 
         Assert.Equal(ReservationStatus.COMPLETED, completed.Status);
-        var item = await _fixture.Db.InventoryItems.FindAsync(itemId);
+        var item = await _context.Items.FindByIdAsync(itemId);
         Assert.Equal(5, item!.QuantityTotal);
     }
 
@@ -249,9 +254,7 @@ public class ReservationServiceTests : IDisposable
         var itemId = await SeedItemAsync();
         var request = await _service.CreateAsync(ValidRequest(itemId));
 
-        var item = await _fixture.Db.InventoryItems.FindAsync(itemId);
-        _fixture.Db.InventoryItems.Remove(item!);
-        await _fixture.Db.SaveChangesAsync();
+        await _context.NewInventoryService().DeleteAsync(itemId);
 
         var survivors = await _service.FindAllAsync();
         var survivor = Assert.Single(survivors);
@@ -272,5 +275,5 @@ public class ReservationServiceTests : IDisposable
         Assert.Empty(await _service.FindAllAsync());
     }
 
-    public void Dispose() => _fixture.Dispose();
+    public void Dispose() => _context.Dispose();
 }

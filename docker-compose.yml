@@ -1,32 +1,70 @@
+# Local development stack: the two AWS services the backend depends on, emulated, plus the API
+# itself. Deployed, the API is a Lambda function behind an HTTP API and these are the real
+# DynamoDB and S3 - see backend/template.yaml.
+#
+# `docker compose up -d dynamodb minio` is enough on its own to run the backend from the IDE or
+# to run `dotnet test`; the backend service is here for running the whole thing in containers.
 services:
+  dynamodb:
+    image: amazon/dynamodb-local:latest
+    # -sharedDb keeps every client on one database file regardless of credentials, and -dbPath
+    # makes it survive a restart. Runs as root because the image's default user can't write to a
+    # bind-backed volume.
+    user: root
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "/data"]
+    ports:
+      - "8000:8000"
+    volumes:
+      - plumeria-dynamodb:/data
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      # Also the App__Storage__AccessKey/SecretKey the backend signs with - see below.
+      MINIO_ROOT_USER: plumeria
+      MINIO_ROOT_PASSWORD: plumeria-local
+    ports:
+      - "9000:9000"
+      # Browser console, for eyeballing what actually landed in the bucket.
+      - "9001:9001"
+    volumes:
+      - plumeria-minio:/data
+    restart: unless-stopped
+
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.local
     ports:
       - "8080:8080"
     env_file:
-      - backend/.env
+      # SES credentials for pickup-request notifications. Optional - without it the backend logs
+      # that notifications are off and carries on.
+      - path: backend/.env
+        required: false
     environment:
       # Dev-only defaults from appsettings.json - override here (or in backend/.env) before any
       # real use, same as running locally with `dotnet run`.
       App__Cors__AllowedOrigins: "http://localhost:5173,https://flower-shoppe.iridebears.workers.dev"
-    volumes:
-      - plumeria-db:/app/db
-      - plumeria-uploads:/app/uploads
-    restart: unless-stopped
 
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    command: tunnel run
-    volumes:
-      - ./cloudflared:/etc/cloudflared
-    environment:
-      TUNNEL_CONFIG: /etc/cloudflared/config.yml
+      # The emulators are addressed by service name from inside the network, and signed for with
+      # their own keys rather than the AWS ones backend/.env may carry for SES.
+      App__Dynamo__ServiceUrl: "http://dynamodb:8000"
+      App__Dynamo__AccessKey: "plumeria"
+      App__Dynamo__SecretKey: "plumeria-local"
+      App__Dynamo__CreateTableIfMissing: "true"
+      App__Storage__ServiceUrl: "http://minio:9000"
+      App__Storage__AccessKey: "plumeria"
+      App__Storage__SecretKey: "plumeria-local"
+      App__Storage__ForcePathStyle: "true"
+      App__Storage__CreateBucketIfMissing: "true"
     depends_on:
-      - backend
+      - dynamodb
+      - minio
     restart: unless-stopped
 
 volumes:
-  plumeria-db:
-  plumeria-uploads:
+  plumeria-dynamodb:
+  plumeria-minio:

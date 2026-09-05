@@ -8,7 +8,39 @@ namespace PlumeriaStore.Api.Features.Notifications;
 
 public partial class EmailNotificationService
 {
-    private static readonly TimeZoneInfo PacificTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Los_Angeles");
+    private static readonly TimeZoneInfo PacificTimeZone = ResolvePacificTimeZone();
+
+    /// <summary>
+    /// Lambda's provided.al2023 runtime is minimal and isn't guaranteed to carry the tz database,
+    /// which would turn a lookup by ID into a startup crash over an email timestamp. The IDs are
+    /// tried in turn, then a hand-built zone with the current US Pacific rules as a last resort.
+    /// </summary>
+    private static TimeZoneInfo ResolvePacificTimeZone()
+    {
+        foreach (var id in new[] { "America/Los_Angeles", "Pacific Standard Time" })
+        {
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById(id);
+            }
+            catch (Exception ex) when (ex is TimeZoneNotFoundException or InvalidTimeZoneException)
+            {
+                // Try the next ID.
+            }
+        }
+
+        // Second Sunday in March to the first Sunday in November, one hour forward.
+        var daylightSaving = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(
+            DateTime.MinValue.Date,
+            DateTime.MaxValue.Date,
+            TimeSpan.FromHours(1),
+            TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 2, 0, 0), 3, 2, DayOfWeek.Sunday),
+            TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 2, 0, 0), 11, 1, DayOfWeek.Sunday));
+
+        return TimeZoneInfo.CreateCustomTimeZone(
+            "Pacific", TimeSpan.FromHours(-8), "Pacific Time", "Pacific Standard Time", "Pacific Daylight Time",
+            [daylightSaving]);
+    }
 
     private readonly IEmailSender _emailSender;
     private readonly EmailOptions _options;

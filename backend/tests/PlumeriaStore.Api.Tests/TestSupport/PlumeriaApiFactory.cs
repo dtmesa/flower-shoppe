@@ -1,25 +1,36 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Data.Sqlite;
 
 namespace PlumeriaStore.Api.Tests.TestSupport;
 
 /// <summary>
-/// Boots the real app (Program.cs) end-to-end against an isolated temp SQLite file and temp upload
-/// directory, so endpoint tests exercise routing, the validation filter, auth, and the exception
-/// handler exactly as they run in production — not just the service layer.
+/// Boots the real app (Program.cs) end-to-end against an isolated DynamoDB table and S3 bucket in
+/// the local emulators, so endpoint tests exercise routing, the validation filter, auth, and the
+/// exception handler exactly as they run in production — not just the service layer.
 /// </summary>
 public sealed class PlumeriaApiFactory : WebApplicationFactory<Program>
 {
-    private readonly string _dbPath = Path.Combine(Path.GetTempPath(), $"plumeria-tests-{Guid.NewGuid()}.db");
-    private readonly string _uploadDir = Path.Combine(Path.GetTempPath(), $"plumeria-tests-uploads-{Guid.NewGuid()}");
+    private readonly TestTable _table = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseSetting("ConnectionStrings:Default", $"Data Source={_dbPath}");
-        builder.UseSetting("App:Upload:Directory", _uploadDir);
+        builder.UseSetting("App:Aws:Region", LocalAws.Region);
 
-        // Overrides whatever backend/.env provides (Program.cs loads it unconditionally) so
+        builder.UseSetting("App:Dynamo:TableName", _table.TableName);
+        builder.UseSetting("App:Dynamo:ServiceUrl", LocalAws.DynamoUrl);
+        builder.UseSetting("App:Dynamo:AccessKey", LocalAws.AccessKey);
+        builder.UseSetting("App:Dynamo:SecretKey", LocalAws.SecretKey);
+        // The table is created by the fixture above, before the app starts.
+        builder.UseSetting("App:Dynamo:CreateTableIfMissing", "false");
+
+        builder.UseSetting("App:Storage:BucketName", _table.BucketName);
+        builder.UseSetting("App:Storage:ServiceUrl", LocalAws.S3Url);
+        builder.UseSetting("App:Storage:AccessKey", LocalAws.AccessKey);
+        builder.UseSetting("App:Storage:SecretKey", LocalAws.SecretKey);
+        builder.UseSetting("App:Storage:ForcePathStyle", "true");
+        builder.UseSetting("App:Storage:CreateBucketIfMissing", "false");
+
+        // Overrides whatever backend/.env provides (Program.cs loads it outside Lambda) so
         // integration tests never attempt a real SES call - EmailNotificationService already
         // treats a blank FromAddress as "notifications disabled" and skips without erroring.
         builder.UseSetting("EMAIL_FROM_ADDRESS", "");
@@ -28,15 +39,6 @@ public sealed class PlumeriaApiFactory : WebApplicationFactory<Program>
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);
-
-        // Microsoft.Data.Sqlite pools native connection handles past DbContext disposal, so the
-        // file stays locked until the pool is explicitly cleared.
-        SqliteConnection.ClearAllPools();
-        File.Delete(_dbPath);
-
-        if (Directory.Exists(_uploadDir))
-        {
-            Directory.Delete(_uploadDir, recursive: true);
-        }
+        _table.Dispose();
     }
 }

@@ -233,7 +233,9 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  margin-bottom: 1rem;
+  /* A touch more than the gap between the lines themselves, so the total reads as a summary of
+     the list rather than another row in it. */
+  margin-bottom: 1.25rem;
 }
 
 .cart-line {
@@ -281,16 +283,50 @@
 }
 
 .cart-line-controls .link-button {
+  position: relative;
   text-decoration: none;
 }
 
-.cart-line-controls .link-button:hover {
-  text-decoration: underline;
+/* Drawn in on hover rather than switching text-decoration on, which can't animate. Same
+   left-to-right scale as the admin tabs, at 1px to match the weight of the underline it replaces. */
+.cart-line-controls .link-button::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  opacity: 0;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+.cart-line-controls .link-button:hover::after {
+  transform: scaleX(1);
+  opacity: 1;
+}
+
+/* Unlike the other forms, this error sits between two fields rather than at the end, so the
+   form's 1rem gap lands on both sides of it and the message reads as a separately spaced block.
+   Trimmed on each side to pull it back into the form. Two classes so it beats the generic
+   `.form > .form-error-slot--open` rule regardless of which is declared first. */
+.form.cart-checkout-form > .form-error-slot--open {
+  margin-top: -0.9rem;
+  margin-bottom: -0.9rem;
 }
 
 .cart-checkout-summary {
   font-weight: 700;
   margin-bottom: 0.5rem;
+}
+
+/* Only in the cart view, not the checkout form - which has its own actions row and shares the
+   summary above. Given more room than the total takes above itself, so the primary action reads
+   as its own step rather than as part of the figures. */
+.cart-request-btn {
+  margin-top: 0.375rem;
 }
 
 .cart-checkout-actions {
@@ -487,14 +523,23 @@
 .state-message--compact {
   padding: 0.25rem 0 0;
   font-style: italic;
-  /* The invisible (but still full-height, so a real error has room to fade in) reserved error
-     box right above this in the DOM otherwise reads as a big blank gap when there's no error -
-     tuck this text up over it. */
-  margin-top: -1rem;
 }
 
 .state-message--error {
   color: var(--color-state-error-text);
+}
+
+/* Shared by every fade-in/fade-out driven by useFadeTransition. */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
 }
 
 /* Catalog layout: sidebar filters + content grid */
@@ -510,6 +555,8 @@
 }
 
 .filter-sidebar {
+  /* Only mounts once there is inventory to filter, so this plays as the catalog arrives. */
+  animation: fade-in 450ms ease;
   flex: 0 0 220px;
   display: flex;
   flex-direction: column;
@@ -785,10 +832,20 @@ input[type="radio"]:focus-visible {
 }
 
 /* Inventory grid */
+/* Fades in on mount, and again on every filter change - CatalogPage keys this element on the
+   filter signature, so a swap remounts it and replays the animation. */
 .inventory-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 1.25rem;
+  animation: fade-in 450ms ease;
+}
+
+/* The outgoing set on its way out, before the incoming one replaces it. Keep 300ms in step with
+   GRID_FADE_OUT_MS in CatalogPage.tsx. */
+.inventory-grid--swapping {
+  opacity: 0;
+  transition: opacity 300ms ease;
 }
 
 .inventory-card {
@@ -919,10 +976,30 @@ input[type="radio"]:focus-visible {
   font-size: 0.85rem;
 }
 
+/* The add/edit item modal spaces this error itself - the submit button above carries its own
+   margin - so the <p>'s default margins are dropped and the gap on each side is only what those
+   neighbours set. */
+.inventory-form .form-error {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* Brings the error up to the same 14px below the button that login uses. Applied to the slot
+   rather than by trimming the button's own margin, which also sets the button-to-Photos gap when
+   no error is showing. Two classes so it beats the generic `.form > .form-error-slot--open`
+   regardless of declaration order. */
+.form.inventory-form > .form-error-slot--open {
+  margin-top: -0.625rem;
+}
+
+/* Full width of the form rather than shrink-wrapped: it's the modal's primary action, and at
+   its natural size it read as a minor control floating at the left edge. The flex column stretches
+   its children by default, so dropping the align-self (and the padding that kept it narrow) is
+   all it takes. */
 .inventory-form-submit {
-  align-self: flex-start;
-  padding-left: 0.7rem;
-  padding-right: 0.7rem;
+  /* On top of the form's own 1rem gap, so the button isn't crowded by the error slot below it
+     (or, with no error, by the Photos section). */
+  margin-bottom: 0.5rem;
 }
 
 
@@ -1071,6 +1148,29 @@ input[type="radio"]:focus-visible {
   color: var(--color-on-bg-muted);
 }
 
+/* On login the error sits directly under the button it answers, so the form's own 1rem gap is
+   cancelled entirely - what's left between them is the <p>'s default margin inside the slot.
+   Everything else in this form keeps the standard gap. */
+.page--narrow .form > .form-error-slot--open {
+  margin-top: -1rem;
+}
+
+/* Same Montserrat as the default label, one step heavier. A modifier rather than a change to
+   `.form label`, so the two weights can sit side by side while they're being compared.
+
+   The weight has to be walked back on the controls: the label wraps its own input, and the
+   global `input, select, textarea, button { font: inherit }` would otherwise carry 500 into the
+   value the customer types as well as the label above it. */
+.form--medium-labels label {
+  font-weight: 500;
+}
+
+.form--medium-labels label input,
+.form--medium-labels label textarea,
+.form--medium-labels label select {
+  font-weight: 400;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -1093,43 +1193,75 @@ input[type="radio"]:focus-visible {
   flex-shrink: 0;
 }
 
-/* Always mounted (rather than conditionally rendered) so its box permanently reserves its own
-   height - appearing/disappearing then only fades opacity in place instead of shifting the
-   sections below it. Scoped to this modifier rather than the base .form-error rule, which other
-   call sites still mount/unmount conditionally and expect fully opaque by default. */
-.form-error--reserved {
-  background-color: var(--color-form-error-reserved-bg);
-  color: var(--color-form-error-reserved-text);
-  /* Fixed regardless of whether the text is empty or populated - an empty inline text node
-     collapses to a shorter line box than one with real text in it, which was nudging the
-     table below by a few px right as the message appeared. */
-  height: 2.6rem;
+/* The error slides open and pushes what follows it down, rather than sitting in a box that
+   reserves its height permanently and shows as a blank gap the rest of the time.
+
+   Always mounted, so both directions animate. The height comes from a 0fr/1fr grid row, which
+   settles at whatever the message actually needs instead of a fixed height the text has to fit
+   inside. Collapsed, the row is zero - but a .form still puts its 1rem gap on both sides of the
+   slot, so half of that is pulled back on each side: an absent error then leaves exactly the
+   1rem the two neighbours would have had between them anyway. */
+.form-error-slot {
+  display: grid;
+  grid-template-rows: 0fr;
   opacity: 0;
-  transition: opacity 1s ease;
-  pointer-events: none;
+  /* Closing: the text goes quickly (250ms) while the box takes its time collapsing under it
+     (500ms), so the message has cleared well before the gap finishes closing. */
+  transition: grid-template-rows 500ms ease-in-out, margin-top 500ms ease-in-out,
+    margin-bottom 500ms ease-in-out, opacity 250ms ease-in-out;
 }
 
-.form-error--reserved.form-error--visible {
+.form-error-slot--open {
+  grid-template-rows: 1fr;
   opacity: 1;
-  pointer-events: auto;
+  /* Opening: the mirror image - the box makes room quickly (250ms) and the text fades in gently
+     over twice that (500ms), so the fade reads on its own rather than being lost inside the
+     movement. Both directions run 500ms end to end, which is what SLIDE_MS in FormError.tsx
+     waits out before dropping the text from the DOM. */
+  transition: grid-template-rows 250ms ease-in-out, margin-top 250ms ease-in-out,
+    margin-bottom 250ms ease-in-out, opacity 500ms ease-in-out;
 }
 
-.form-error--compact {
+/* Collapsed, the slot is zero-height - but a parent that spaces its children with `gap` still
+   puts one on each side of it, which is the blank the old reserved box used to leave. Inside a
+   .form (1rem gap) half of that is pulled back per side, so an absent error leaves exactly the
+   1rem its two neighbours would have had between them anyway. Parents that don't use `gap` need
+   no such correction, and applying it there would pull their content together instead. */
+.form > .form-error-slot {
   margin-top: -0.5rem;
+  margin-bottom: -0.5rem;
 }
 
-/* Trims the default 1rem form gap slightly on both sides, rather than just above. */
-.form-error--tight {
-  margin: -0.5rem 0;
+.form > .form-error-slot--open {
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
-/* Clamped to one line so the reserved box's height never grows when a message happens to be
-   long enough to wrap - the icon+padding already fix the height, but only if the text can't
-   add a second line. */
-.form-error-text {
+/* The grid row can only collapse to zero if what's in it is clipped. */
+.form-error-slot-inner {
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+/* Stronger colouring for the error answering a form submission. */
+.form-error-slot--prominent .form-error {
+  background-color: var(--color-form-error-prominent-bg);
+  color: var(--color-form-error-prominent-text);
+}
+
+/* The same banner in green, for a message reporting that something worked. Declared after the
+   error rules so it wins at equal specificity; the prominent pairing carries a third class so it
+   beats the prominent-error rule above regardless. */
+.form-error-slot--success .form-error {
+  background-color: var(--color-form-success-bg);
+  color: var(--color-form-success-text);
+}
+
+.form-error-slot--success.form-error-slot--prominent .form-error {
+  background-color: var(--color-form-success-prominent-bg);
+  color: var(--color-form-success-prominent-text);
+}
+
+.form-error-text {
   min-width: 0;
 }
 
@@ -1157,6 +1289,13 @@ input[type="radio"]:focus-visible {
   color: var(--color-text-muted);
 }
 
+/* The eye toggle is positioned against .password-field rather than against the input, so a
+   shake on the input alone would leave it hanging still while the field moves out from under it.
+   Same animation, started by the same class going on, so the two stay in step. */
+.password-field .field-invalid ~ .password-toggle {
+  animation: field-shake 0.4s ease;
+}
+
 .password-toggle-icon {
   position: absolute;
   top: 0;
@@ -1171,15 +1310,60 @@ input[type="radio"]:focus-visible {
 
 /* Image manager */
 .image-manager {
-  margin-top: 0;
+  /* Separates the Photos section from the form above it - which otherwise ends 8px under the
+     submit button. This also supplies the gap below an open error, so the error itself needs no
+     bottom margin of its own here. */
+  margin-top: 1rem;
   padding-top: 0;
+}
+
+/* Photos is a distinct section from the item's own fields, not a continuation of the form - the
+   rule says so. Drawn as a block pseudo-element rather than a border-top so it can be inset from
+   both edges; a border would have to span the section's full width, and insetting the section
+   itself would take the heading and thumbnails along with it. Its bottom margin is the gap down
+   to the heading. Only reachable when editing - adding an item shows a "save first" line here. */
+.image-manager::before {
+  content: "";
+  display: block;
+  height: 1px;
+  background: var(--color-hairline);
+  margin: 0 0.75rem 1rem;
+}
+
+/* Row values are the substance of the admin tables, so they carry the same medium weight the
+   form labels use rather than sitting at plain body weight. Scoped to .table-wrapper, which all
+   four admin tables share, rather than the global `th, td`. */
+.table-wrapper tbody td {
+  font-weight: 500;
+}
+
+/* A category row being edited swaps its cells for inputs, which inherit the font - the value the
+   admin is typing stays at body weight, the same split .form--medium-labels makes. */
+.table-wrapper tbody td input {
+  font-weight: 400;
+}
+
+/* The photo error sits between the Photos heading and the thumbnails, so its own margins are
+   what set it apart from each - trimmed above, where the heading already leaves room, and given
+   a little more below so the grid isn't crowded up against it. */
+.image-manager .form-error {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+}
+
+/* The Photos heading already puts 2rem below itself, so the message is pulled back up to sit an
+   even 24px under it. This has to go on the slot, not on the message inside it: the slot clips
+   its content in order to animate the height, so a negative margin in there would hide the top
+   of the box rather than move it. */
+.image-manager .form-error-slot--open {
+  margin-top: -1rem;
 }
 
 .image-manager-header {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  margin-bottom: 1rem;
+  margin-bottom: 2rem;
 }
 
 .image-manager-header h3 {
@@ -1304,27 +1488,32 @@ input[type="radio"]:focus-visible {
 }
 
 .tab {
+  --tab-padding-x: 1rem;
+  /* How far the underline reaches past the text/badge on each side. Eats into the tab's padding
+     rather than adding width, so nothing shifts. */
+  --tab-underline-overhang: 0.25rem;
+
   background: none;
   border: none;
-  padding: 0.7rem 1rem;
+  padding: 0.7rem var(--tab-padding-x);
   margin-right: 1rem;
   cursor: pointer;
   font-weight: 600;
   color: var(--color-on-bg-muted);
   text-decoration: none;
-  border-bottom: 2px solid transparent;
+  /* Containing block for the active underline drawn below. */
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  transition: color 0.15s ease, gap 0.15s ease, background-color 0.15s ease;
+  transition: color 0.15s ease;
 }
 
-/* --color-surface-alt is a step lighter than the canvas in dark mode and a step darker in
-   light mode, so this reads as a highlight in both without needing a per-theme override. */
+/* Hover is a colour lift plus the underline drawing in below. No background fill: the tabs sit
+   on the open canvas rather than in a bar, so a block of colour behind one read as a button
+   rather than as a tab. */
 .tab:hover {
   color: var(--color-on-bg);
-  background-color: var(--color-surface-alt);
-  gap: 0.55rem;
 }
 
 .tab-label {
@@ -1332,13 +1521,44 @@ input[type="radio"]:focus-visible {
   transition: transform 0.15s ease;
 }
 
-.tab:hover .tab-label {
-  transform: scale(1.03);
+/* The only transform left on the label - hover no longer scales it. */
+.tab:active .tab-label {
+  transform: scale(0.94);
 }
 
 .tab--active {
   color: var(--color-on-bg);
-  border-bottom-color: var(--color-on-bg);
+}
+
+/* One underline serves both the hover hint and the active indicator. Drawn as a pseudo-element
+   inset by the tab's own horizontal padding, rather than as a border-bottom on the tab (which
+   would run the full padded width) or on the label (which would stop short of the pending-count
+   badge on the Pickup Requests tab). This tracks the content - text plus badge, plus a little
+   overhang either side - whichever tab it's on. currentColor so it follows whichever colour the
+   tab is showing.
+
+   It sits at scaleX(0) until wanted, so it draws left to right rather than appearing at full
+   width; swap transform-origin to `center` to have it grow out from the middle instead. */
+.tab::after {
+  content: "";
+  position: absolute;
+  left: calc(var(--tab-padding-x) - var(--tab-underline-overhang));
+  right: calc(var(--tab-padding-x) - var(--tab-underline-overhang));
+  bottom: 0;
+  height: 2px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  opacity: 0;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+/* The active tab's underline is already at full width on first paint, so there is no change to
+   transition and it doesn't animate in on load - only when the tab is navigated to or hovered. */
+.tab:hover::after,
+.tab--active::after {
+  transform: scaleX(1);
+  opacity: 1;
 }
 
 .tab-badge {
@@ -1374,6 +1594,13 @@ input[type="radio"]:focus-visible {
 
 .tab:hover .tab-badge {
   filter: brightness(var(--hover-brightness-badge));
+}
+
+/* The active tab is the page you're already on, so hovering it signals nothing: its text colour
+   is already lifted to the hover colour and its underline is already drawn, which left the badge
+   as the only thing still reacting. */
+.tab--active:hover .tab-badge {
+  filter: none;
 }
 
 .inventory-table-area {
@@ -1516,7 +1743,7 @@ input[type="radio"]:focus-visible {
 .category-sections {
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
+  gap: 2rem;
 }
 
 /* Unlike h2/h3 elsewhere (which only appear inside white cards/modals) this one sits directly
@@ -1524,6 +1751,14 @@ input[type="radio"]:focus-visible {
 .category-section h3 {
   margin-bottom: 0.6rem;
   color: var(--color-section-heading);
+}
+
+/* The error is the last thing in a category section, so the <p>'s default bottom margin becomes
+   trailing space that pushes the next section down while a message is showing. Dropped here
+   rather than cancelled with a matching negative, which would drift if the font size changed.
+   The margin above it is left alone - that one is doing useful work. */
+.category-section .form-error {
+  margin-bottom: 0;
 }
 
 .category-add-form {
@@ -1708,6 +1943,25 @@ tbody tr:last-child td {
   filter: brightness(var(--hover-brightness-status));
 }
 
+/* The global button:active shrink is cancelled here and applied to just the label instead, the
+   same split the cart trigger uses for its icon. Two reasons: scaling the pill drags the chevron
+   (and its open/closed rotation) along with it, and shrinking a filled shape by a fraction of a
+   pixel leaves an anti-aliased hairline around its edge where it no longer quite covers what's
+   behind - reading as a white rim in light mode and a black one in dark. */
+.status-dropdown-trigger:active {
+  transform: none;
+  opacity: 1;
+}
+
+.status-dropdown-trigger-label {
+  display: inline-block;
+  transition: transform 0.1s ease;
+}
+
+.status-dropdown-trigger:active .status-dropdown-trigger-label {
+  transform: scale(0.94);
+}
+
 /* The popup itself - unlike a native listbox, this can actually have rounded corners. Sits on
    --color-modal-bg (plain page background) rather than --color-surface so it reads as its own
    floated panel instead of blending into a card underneath it. Portaled to <body> and positioned
@@ -1726,6 +1980,16 @@ tbody tr:last-child td {
   background: var(--color-modal-bg);
   border-radius: var(--radius);
   box-shadow: var(--shadow-soft);
+  animation: fade-in 350ms ease;
+}
+
+/* Set while the menu is being held back from unmounting - keep 250ms in step with FADE_OUT_MS
+   in StatusDropdown.tsx. Deliberately quicker than the fade-in above: dismissing should feel
+   like it took effect, while appearing can afford to be softer. Clicks are dropped on the way
+   out so a menu the admin has already dismissed can't still take a selection. */
+.status-dropdown-menu--leaving {
+  animation: fade-out 250ms ease forwards;
+  pointer-events: none;
 }
 
 /* No padding around the list, so the first/last row's own pastel fill reaches the menu's
@@ -1782,6 +2046,18 @@ tbody tr:last-child td {
 
 .status-dropdown-option:hover:not(:disabled):not(:active) .status-dropdown-option-label {
   transform: scale(1.03);
+}
+
+/* Same split as the trigger pill, for the same hairline reason - each row carries a solid pastel
+   fill, so shrinking the row itself would edge it against the menu underneath. Scale only, no
+   opacity, matching the trigger. */
+.status-dropdown-option:active {
+  transform: none;
+  opacity: 1;
+}
+
+.status-dropdown-option:active .status-dropdown-option-label {
+  transform: scale(0.94);
 }
 
 .status-select--new {

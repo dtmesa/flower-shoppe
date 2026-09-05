@@ -9,11 +9,11 @@ public static class AuthEndpoints
     {
         var group = app.MapGroup("/api/auth");
 
-        group.MapPost("/login", async (LoginRequest request, PlumeriaDbContext db, JwtTokenService jwtTokenService) =>
+        group.MapPost("/login", async (LoginRequest request, AdminRepository admins, JwtTokenService jwtTokenService) =>
         {
-            var admin = await db.AdminUsers.FirstOrDefaultAsync(a => a.Username == request.Username);
+            var admin = await admins.FindAsync();
 
-            if (admin is null || !BCrypt.Net.BCrypt.Verify(request.Password, admin.PasswordHash))
+            if (admin is null || admin.Username != request.Username || !BCrypt.Net.BCrypt.Verify(request.Password, admin.PasswordHash))
             {
                 return Results.Problem(statusCode: StatusCodes.Status401Unauthorized, title: "Invalid username or password");
             }
@@ -24,23 +24,27 @@ public static class AuthEndpoints
         .AddEndpointFilter<ValidationFilter<LoginRequest>>()
         .AllowAnonymous();
 
-        group.MapGet("/me", async (ClaimsPrincipal user, PlumeriaDbContext db) =>
+        group.MapGet("/me", async (ClaimsPrincipal user, AdminRepository admins) =>
         {
             var username = user.FindFirstValue(ClaimTypes.NameIdentifier);
-            var admin = await db.AdminUsers.AsNoTracking().FirstOrDefaultAsync(a => a.Username == username);
+            var admin = await admins.FindAsync();
 
-            return admin is null
+            return admin is null || admin.Username != username
                 ? Results.Problem(statusCode: StatusCodes.Status401Unauthorized, title: "Not logged in")
                 : Results.Ok(new AdminProfileResponse(admin.Username));
         });
 
         // Re-issues a token on success (rather than requiring a fresh login) since a username
         // change invalidates the old token's identity going forward.
-        group.MapPut("/admin", async (UpdateCredentialsRequest request, ClaimsPrincipal user, PlumeriaDbContext db, JwtTokenService jwtTokenService) =>
+        group.MapPut("/admin", async (UpdateCredentialsRequest request, ClaimsPrincipal user, AdminRepository admins, JwtTokenService jwtTokenService) =>
         {
             var currentUsername = user.FindFirstValue(ClaimTypes.NameIdentifier);
-            var admin = await db.AdminUsers.FirstOrDefaultAsync(a => a.Username == currentUsername)
-                ?? throw new NotFoundException("Admin account not found");
+            var admin = await admins.FindAsync();
+
+            if (admin is null || admin.Username != currentUsername)
+            {
+                throw new NotFoundException("Admin account not found");
+            }
 
             if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, admin.PasswordHash))
             {
@@ -63,7 +67,7 @@ public static class AuthEndpoints
                 admin.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
             }
 
-            await db.SaveChangesAsync();
+            await admins.SaveAsync(admin);
 
             var token = jwtTokenService.GenerateToken(admin.Username);
             return Results.Ok(new LoginResponse(token, admin.Username));

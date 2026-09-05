@@ -11,12 +11,17 @@ public partial class ReservationService
     [GeneratedRegex(@"^[^\s@]+@[^\s@]+\.[^\s@]+$")]
     private static partial Regex EmailPattern();
 
-    private readonly PlumeriaDbContext _db;
+    private readonly ReservationRepository _requests;
+    private readonly InventoryRepository _items;
     private readonly EmailNotificationService _emailNotificationService;
 
-    public ReservationService(PlumeriaDbContext db, EmailNotificationService emailNotificationService)
+    public ReservationService(
+        ReservationRepository requests,
+        InventoryRepository items,
+        EmailNotificationService emailNotificationService)
     {
-        _db = db;
+        _requests = requests;
+        _items = items;
         _emailNotificationService = emailNotificationService;
     }
 
@@ -50,13 +55,7 @@ public partial class ReservationService
             CreatedAt = DateTime.UtcNow,
         };
 
-        // Units already held by confirmed requests aren't up for grabs, so availability is checked
-        // against total-minus-held rather than the raw total.
-        var reservedByItem = await _db.Reservations
-            .Where(line => line.StockReserved && line.InventoryItemId != null)
-            .GroupBy(line => line.InventoryItemId!)
-            .Select(group => new { ItemId = group.Key, Reserved = group.Sum(line => line.QuantityRequested) })
-            .ToDictionaryAsync(row => row.ItemId, row => row.Reserved);
+        var lineId = 1;
 
         foreach (var lineInput in request.Items)
         {
@@ -65,18 +64,20 @@ public partial class ReservationService
                 throw new BadRequestException("Each item requires an inventory item ID");
             }
 
-            // PickupRequestLineItemInput carries a [Range(1, ...)] attribute, but the endpoint's
-            // ValidationFilter runs Validator.TryValidateObject on the request itself, which does
-            // not recurse into collection elements - so the range is re-checked here by hand.
+            // PickupRequestLineItemInput's own minimum is not enforced at the edge - the endpoint's
+            // ValidationFilter checks the request body, not each element of its collection - so the
+            // range is re-checked here by hand.
             if (lineInput.QuantityRequested < 1)
             {
                 throw new BadRequestException("Quantity must be at least 1");
             }
 
-            var item = await _db.InventoryItems.FindAsync(lineInput.InventoryItemId)
+            var item = await _items.FindByIdAsync(lineInput.InventoryItemId)
                 ?? throw new NotFoundException($"Inventory item not found: {lineInput.InventoryItemId}");
 
-            var available = Math.Max(0, item.QuantityTotal - reservedByItem.GetValueOrDefault(item.Id));
+            // Units already held by confirmed requests aren't up for grabs, so availability is
+            // checked against total-minus-held rather than the raw total.
+            var available = Math.Max(0, item.QuantityTotal - item.QuantityReserved);
             if (lineInput.QuantityRequested > available)
             {
                 throw new BadRequestException(
@@ -85,14 +86,19 @@ public partial class ReservationService
 
             pickupRequest.Items.Add(new Reservation
             {
+                Id = lineId++,
                 InventoryItemId = item.Id,
                 ItemSnapshot = string.Join(" · ", new[] { item.Type, item.Color, item.Size }.Where(part => !string.IsNullOrWhiteSpace(part))),
                 QuantityRequested = lineInput.QuantityRequested,
             });
         }
 
-        _db.PickupRequests.Add(pickupRequest);
-        await _db.SaveChangesAsync();
+        // Only assigned once the request is known to be valid, so a rejected submission doesn't
+        // burn an ID and leave a gap in the admin's numbering.
+        pickupRequest.Id = await _requests.NextIdAsync();
+
+        // A brand-new request holds nothing yet, so no stock moves with this write.
+        await _requests.SaveAsync(pickupRequest);
 
         var response = ToResponse(pickupRequest);
         await _emailNotificationService.NotifyNewPickupRequestAsync(response);
@@ -102,13 +108,12 @@ public partial class ReservationService
 
     public async Task<List<PickupRequestResponse>> FindAllAsync()
     {
-        var requests = await _db.PickupRequests
-            .Include(request => request.Items)
-            .AsNoTracking()
-            .OrderByDescending(request => request.CreatedAt)
-            .ToListAsync();
+        var requests = await _requests.FindAllAsync();
 
-        return requests.Select(ToResponse).ToList();
+        return requests
+            .OrderByDescending(request => request.CreatedAt)
+            .Select(ToResponse)
+            .ToList();
     }
 
     public async Task<PickupRequestResponse> UpdateStatusAsync(int id, ReservationStatus status)
@@ -124,13 +129,21 @@ public partial class ReservationService
         // item's QuantityTotal - held units are subtracted when reporting availability instead.
         var confirming = status == ReservationStatus.CONFIRMED;
 
-        foreach (var line in pickupRequest.Items.Where(line => line.StockReserved != confirming))
+        var changedLines = pickupRequest.Items.Where(line => line.StockReserved != confirming).ToList();
+        var adjustments = await BuildAdjustmentsAsync(
+            changedLines,
+            (item, heldByThisRequest) => item with
+            {
+                Reserved = item.Reserved + (confirming ? heldByThisRequest : -heldByThisRequest),
+            });
+
+        foreach (var line in changedLines)
         {
             line.StockReserved = confirming;
         }
 
         pickupRequest.Status = status;
-        await _db.SaveChangesAsync();
+        await _requests.SaveAsync(pickupRequest, adjustments);
 
         return ToResponse(pickupRequest);
     }
@@ -144,63 +157,80 @@ public partial class ReservationService
         var pickupRequest = await GetRequestOrThrowAsync(id);
 
         var heldLines = pickupRequest.Items.Where(line => line.StockReserved).ToList();
-        var items = permanentlyClear ? await LoadItemsForAsync(heldLines) : null;
+        var adjustments = await BuildAdjustmentsAsync(
+            heldLines,
+            (item, heldByThisRequest) => item with
+            {
+                // Releasing a hold needs no arithmetic on the total; only a permanent clear reduces it.
+                Total = permanentlyClear ? Math.Max(0, item.Total - heldByThisRequest) : item.Total,
+                Reserved = item.Reserved - heldByThisRequest,
+            });
 
         foreach (var line in heldLines)
         {
-            // Releasing a hold needs no arithmetic; only a permanent clear reduces the total.
-            if (permanentlyClear && line.InventoryItemId is not null
-                && items!.TryGetValue(line.InventoryItemId, out var item))
-            {
-                item.QuantityTotal = Math.Max(0, item.QuantityTotal - line.QuantityRequested);
-            }
             line.StockReserved = false;
         }
 
         pickupRequest.Status = ReservationStatus.COMPLETED;
-        await _db.SaveChangesAsync();
+        await _requests.SaveAsync(pickupRequest, adjustments);
 
         return ToResponse(pickupRequest);
-    }
-
-    /// <summary>
-    /// Loads every inventory item referenced by the given lines in one query, keyed by ID, so
-    /// stock adjustment doesn't issue a lookup per line. Lines whose item has since been deleted
-    /// (InventoryItemId goes null on delete) simply won't appear in the result.
-    /// </summary>
-    private async Task<Dictionary<string, InventoryItem>> LoadItemsForAsync(IEnumerable<Reservation> lines)
-    {
-        var ids = lines
-            .Select(line => line.InventoryItemId)
-            .Where(id => id is not null)
-            .Distinct()
-            .ToList();
-
-        if (ids.Count == 0)
-        {
-            return [];
-        }
-
-        return await _db.InventoryItems
-            .Where(item => ids.Contains(item.Id))
-            .ToDictionaryAsync(item => item.Id);
     }
 
     public async Task DeleteAsync(int id)
     {
         var pickupRequest = await GetRequestOrThrowAsync(id);
 
-        _db.PickupRequests.Remove(pickupRequest);
-        await _db.SaveChangesAsync();
+        // Deleting a request that is still holding stock has to give those units back. Under the
+        // old schema that fell out of cascading the line items away, since the reserved count was
+        // summed from them; now the count lives on the item and has to be moved explicitly.
+        var released = await BuildAdjustmentsAsync(
+            pickupRequest.Items.Where(line => line.StockReserved),
+            (item, heldByThisRequest) => item with { Reserved = item.Reserved - heldByThisRequest });
+
+        await _requests.DeleteAsync(id, released);
+    }
+
+    /// <summary>Counts read off an inventory item, so an adjustment can be expressed as "from these, to those".</summary>
+    private readonly record struct StockCounts(int Total, int Reserved);
+
+    /// <summary>
+    /// Turns a set of line items into the per-item stock writes they imply. Lines are grouped by
+    /// item first, so a request naming the same item twice moves its counts once, and lines whose
+    /// item has since been deleted are skipped - there is nothing left to adjust.
+    /// </summary>
+    private async Task<List<StockAdjustment>> BuildAdjustmentsAsync(
+        IEnumerable<Reservation> lines,
+        Func<StockCounts, int, StockCounts> apply)
+    {
+        var quantityByItem = lines
+            .Where(line => line.InventoryItemId is not null)
+            .GroupBy(line => line.InventoryItemId!)
+            .ToDictionary(group => group.Key, group => group.Sum(line => line.QuantityRequested));
+
+        var adjustments = new List<StockAdjustment>();
+
+        foreach (var (itemId, quantity) in quantityByItem)
+        {
+            var item = await _items.FindByIdAsync(itemId);
+            if (item is null)
+            {
+                continue;
+            }
+
+            var from = new StockCounts(item.QuantityTotal, item.QuantityReserved);
+            var to = apply(from, quantity);
+
+            adjustments.Add(new StockAdjustment(itemId, from.Total, from.Reserved, to.Total, Math.Max(0, to.Reserved)));
+        }
+
+        return adjustments;
     }
 
     private async Task<PickupRequest> GetRequestOrThrowAsync(int id)
     {
-        var pickupRequest = await _db.PickupRequests
-            .Include(request => request.Items)
-            .FirstOrDefaultAsync(request => request.Id == id);
-
-        return pickupRequest ?? throw new NotFoundException($"Pickup request not found: {id}");
+        return await _requests.FindByIdAsync(id)
+            ?? throw new NotFoundException($"Pickup request not found: {id}");
     }
 
     private static PickupRequestResponse ToResponse(PickupRequest pickupRequest)

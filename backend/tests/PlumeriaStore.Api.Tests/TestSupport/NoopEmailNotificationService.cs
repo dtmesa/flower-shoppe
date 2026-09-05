@@ -12,7 +12,7 @@ file class NoopEmailSender : IEmailSender
 
 /// <summary>
 /// A real EmailNotificationService wired to a no-op sender, so ReservationService tests don't
-/// need AWS credentials or a network call - EMAIL_FROM_ADDRESS is left blank, which the service
+/// need real AWS credentials or a network call - EMAIL_FROM_ADDRESS is left blank, which the service
 /// already treats as "notifications disabled" and skips without erroring.
 /// </summary>
 public static class NoopEmailNotificationService

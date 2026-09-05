@@ -1,39 +1,45 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { act, render, renderHook, screen } from "@testing-library/react";
+import { act, render, renderHook, screen, waitFor } from "@testing-library/react";
 import { FormError, useDismissingError } from "./FormError";
 
 describe("FormError", () => {
-  it("renders nothing when there is no message", () => {
+  const slot = (container: HTMLElement) => container.querySelector(".form-error-slot");
+
+  // The slot is always in the DOM so it can animate in both directions; with no message it is a
+  // collapsed, zero-height row rather than an absent element.
+  it("stays collapsed when there is no message", () => {
     const { container } = render(<FormError message={null} />);
-    expect(container).toBeEmptyDOMElement();
+
+    expect(slot(container)).toBeInTheDocument();
+    expect(slot(container)).not.toHaveClass("form-error-slot--open");
+    expect(container.querySelector(".form-error-text")).toBeEmptyDOMElement();
   });
 
-  it("renders the message when there is one", () => {
-    render(<FormError message="Name and code are required." />);
+  it("opens and shows the message when there is one", () => {
+    const { container } = render(<FormError message="Name and code are required." />);
+
+    expect(slot(container)).toHaveClass("form-error-slot--open");
     expect(screen.getByText("Name and code are required.")).toBeInTheDocument();
   });
 
-  // The reserved variant stays mounted even while empty, so showing/hiding it fades in place
-  // rather than shifting the content underneath it.
-  it("stays mounted while empty when reserving space", () => {
-    const { container } = render(<FormError message={null} reserveSpace />);
-    const el = container.querySelector(".form-error");
-    expect(el).toBeInTheDocument();
-    expect(el).toHaveClass("form-error--reserved");
-    expect(el).not.toHaveClass("form-error--visible");
+  // Clearing the message closes the slot, but the text has to outlive it - otherwise the box
+  // empties out halfway through sliding shut.
+  it("keeps the text through the closing slide, then drops it", async () => {
+    const { container, rerender } = render(<FormError message="Boom" />);
+
+    rerender(<FormError message={null} />);
+    expect(slot(container)).not.toHaveClass("form-error-slot--open");
+    expect(screen.getByText("Boom")).toBeInTheDocument();
+
+    await waitFor(() => expect(screen.queryByText("Boom")).not.toBeInTheDocument());
   });
 
-  it("marks itself visible once it has a message", () => {
-    const { container } = render(<FormError message="Boom" reserveSpace />);
-    expect(container.querySelector(".form-error")).toHaveClass("form-error--visible");
-  });
+  it("applies the prominent colouring only when asked", () => {
+    const { container, rerender } = render(<FormError message="x" />);
+    expect(slot(container)).not.toHaveClass("form-error-slot--prominent");
 
-  it("applies the compact modifier only when asked", () => {
-    const { container, rerender } = render(<FormError message="x" reserveSpace />);
-    expect(container.querySelector(".form-error")).not.toHaveClass("form-error--compact");
-
-    rerender(<FormError message="x" reserveSpace compact />);
-    expect(container.querySelector(".form-error")).toHaveClass("form-error--compact");
+    rerender(<FormError message="x" prominent />);
+    expect(slot(container)).toHaveClass("form-error-slot--prominent");
   });
 });
 

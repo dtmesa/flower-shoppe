@@ -1,7 +1,13 @@
 bin/
 obj/
+
+# Build output of ./Dockerfile - the Lambda deployment archive.
+publish/
+
+# Left over from the SQLite/local-disk era; the API now stores data in DynamoDB and photos in S3.
 db/
 uploads/
+
 .env
 *.log
 backend-stdout.log

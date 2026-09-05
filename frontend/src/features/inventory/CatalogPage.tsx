@@ -1,11 +1,14 @@
 import { useMemo, useState, type CSSProperties } from "react";
 import type { InventoryItem } from "./types";
 import { useInventory } from "./inventoryApi";
-import { extractErrorMessage } from "../../lib/apiClient";
+import { useFadeSwap } from "../../lib/useFadeSwap";
 import { FilterSidebar } from "./FilterSidebar";
 import { InventoryCard } from "./InventoryCard";
 import { InventoryDetailModal } from "./InventoryDetailModal";
 import bannerImage from "../../assets/banner.jpg";
+
+/** Keep in step with the `.inventory-grid--swapping` transition in components.css. */
+const GRID_FADE_OUT_MS = 300;
 
 export function CatalogPage() {
   const { items: allItems, error, isLoading } = useInventory();
@@ -46,6 +49,21 @@ export function CatalogPage() {
     });
   }, [items, selectedTypes, selectedColors, selectedSizes, priceLimit, priceCeiling]);
 
+  // What counts as "a new filter was applied" - the selections themselves, not the resulting
+  // array, which gets a fresh identity whenever the inventory is refetched.
+  const filterSignature = [
+    selectedTypes.join(),
+    selectedColors.join(),
+    selectedSizes.join(),
+    priceLimit,
+  ].join("|");
+
+  const {
+    shownKey,
+    shown: visibleItems,
+    fadingOut,
+  } = useFadeSwap(filterSignature, filteredItems, GRID_FADE_OUT_MS);
+
   return (
     <>
     <div className="banner">
@@ -76,16 +94,22 @@ export function CatalogPage() {
         )}
 
         <div className="catalog-content">
-          {error && <p className="state-message state-message--error">{extractErrorMessage(error)}</p>}
           {!isLoading && !error && items.length === 0 && (
             <p className="state-message">No plumeria available right now — check back soon!</p>
           )}
-          {!isLoading && !error && items.length > 0 && filteredItems.length === 0 && (
+          {/* visibleItems, not filteredItems: during a swap the outgoing set is still on screen,
+              and this would otherwise appear alongside it for the length of the fade-out. */}
+          {!isLoading && !error && items.length > 0 && visibleItems.length === 0 && (
             <p className="state-message">No items match your filters.</p>
           )}
 
-          <div className="inventory-grid">
-            {filteredItems.map((item) => (
+          {/* Keyed on the filter signature so a swap remounts the grid and replays its fade-in;
+              the --swapping class fades the outgoing set out first (see useFadeSwap). */}
+          <div
+            key={shownKey}
+            className={`inventory-grid${fadingOut ? " inventory-grid--swapping" : ""}`}
+          >
+            {visibleItems.map((item) => (
               <InventoryCard key={item.id} item={item} onSelect={() => setSelectedItem(item)} />
             ))}
           </div>

@@ -102,7 +102,11 @@ export function InventoryFormModal({ item, onClose, onSaved }: InventoryFormModa
 
   return (
     <Modal title={currentItem ? `Edit ${currentItem.id}` : "Add Inventory Item"} onClose={onClose} wide>
-      <form className="form" onSubmit={handleSubmit} noValidate>
+      <form
+        className={`form form--medium-labels inventory-form inventory-form--${currentItem ? "edit" : "add"}`}
+        onSubmit={handleSubmit}
+        noValidate
+      >
         <div className="form-grid">
           <label>
             Type
@@ -200,7 +204,7 @@ export function InventoryFormModal({ item, onClose, onSaved }: InventoryFormModa
         <button type="submit" className="btn btn-primary inventory-form-submit" disabled={saving}>
           {saving ? "Saving..." : currentItem ? "Save Changes" : "Create Item"}
         </button>
-        <FormError message={error} reserveSpace compact />
+        <FormError message={error} prominent />
       </form>
 
       {currentItem ? (
