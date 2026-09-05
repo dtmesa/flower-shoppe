@@ -47,9 +47,28 @@ Parameters:
     Default: us-west-2
     Description: Region of the SES identity, which needn't be the region this stack is deployed to.
 
+  ApiDomainName:
+    Type: String
+    Default: ""
+    Description: >
+      Custom hostname to serve the API on, e.g. api.example.org. Leave blank to use the generated
+      execute-api URL only. Requires ApiCertificateArn to be set as well.
+
+  ApiCertificateArn:
+    Type: String
+    Default: ""
+    Description: >
+      ACM certificate covering ApiDomainName, issued in this stack's region - a regional API
+      Gateway endpoint won't accept a certificate from anywhere else.
+
 Conditions:
   # SES permissions are only attached when there is an identity to send as.
   NotificationsEnabled: !Not [!Equals [!Ref EmailFromAddress, ""]]
+
+  # Both halves are needed: a hostname is no use without a certificate to serve it under.
+  CustomDomainEnabled: !And
+    - !Not [!Equals [!Ref ApiDomainName, ""]]
+    - !Not [!Equals [!Ref ApiCertificateArn, ""]]
 
 Globals:
   Function:
@@ -104,6 +123,28 @@ Resources:
       StageName: $default
       # CORS is answered by the application (App__Cors__AllowedOrigins), which already has to know
       # the allowed origins - configuring it here as well would be a second place to keep in sync.
+
+  # The API answers on its generated execute-api URL either way; this adds the custom hostname
+  # alongside it. TLS terminates here, so the certificate has to cover ApiDomainName exactly.
+  ApiDomain:
+    Type: AWS::ApiGatewayV2::DomainName
+    Condition: CustomDomainEnabled
+    Properties:
+      DomainName: !Ref ApiDomainName
+      DomainNameConfigurations:
+        - CertificateArn: !Ref ApiCertificateArn
+          EndpointType: REGIONAL
+          SecurityPolicy: TLS_1_2
+
+  # No ApiMappingKey, so the custom hostname's root maps to the stage and paths arrive unchanged -
+  # the app's own routes ("/api/...") don't gain a prefix.
+  ApiDomainMapping:
+    Type: AWS::ApiGatewayV2::ApiMapping
+    Condition: CustomDomainEnabled
+    Properties:
+      ApiId: !Ref Api
+      DomainName: !Ref ApiDomain
+      Stage: !Ref ApiApiGatewayDefaultStage
 
   Function:
     Type: AWS::Serverless::Function
@@ -161,3 +202,10 @@ Outputs:
 
   UploadsBucketName:
     Value: !Ref UploadsBucket
+
+  ApiDomainTarget:
+    Condition: CustomDomainEnabled
+    Description: >
+      Point ApiDomainName at this with a CNAME. Behind Cloudflare's proxy, use SSL mode Full
+      (strict) - the origin presents a certificate for the custom hostname, not for this target.
+    Value: !GetAtt ApiDomain.RegionalDomainName
