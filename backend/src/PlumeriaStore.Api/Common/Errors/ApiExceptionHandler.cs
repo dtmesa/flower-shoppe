@@ -9,10 +9,12 @@ namespace PlumeriaStore.Api.Common.Errors;
 /// </summary>
 public class ApiExceptionHandler : IExceptionHandler
 {
+    private readonly IProblemDetailsService _problemDetailsService;
     private readonly ILogger<ApiExceptionHandler> _logger;
 
-    public ApiExceptionHandler(ILogger<ApiExceptionHandler> logger)
+    public ApiExceptionHandler(IProblemDetailsService problemDetailsService, ILogger<ApiExceptionHandler> logger)
     {
+        _problemDetailsService = problemDetailsService;
         _logger = logger;
     }
 
@@ -32,12 +34,19 @@ public class ApiExceptionHandler : IExceptionHandler
         }
 
         httpContext.Response.StatusCode = status;
-        await httpContext.Response.WriteAsJsonAsync(new ProblemDetails
-        {
-            Status = status,
-            Title = title,
-        }, cancellationToken);
 
-        return true;
+        // Written through the framework's own problem-details service rather than serialized here,
+        // so the payload matches what Results.Problem produces and stays on the source-generated
+        // JSON path Native AOT needs.
+        return await _problemDetailsService.TryWriteAsync(new ProblemDetailsContext
+        {
+            HttpContext = httpContext,
+            Exception = exception,
+            ProblemDetails = new ProblemDetails
+            {
+                Status = status,
+                Title = title,
+            },
+        });
     }
 }

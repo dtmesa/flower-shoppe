@@ -1,23 +1,35 @@
-using System.ComponentModel.DataAnnotations;
+using PlumeriaStore.Api.Common.Validation;
 
 namespace PlumeriaStore.Api.Features.Reservations;
 
-public record PickupRequestLineItemInput(
-    [property: Required] string InventoryItemId,
-    [property: Required][property: Range(1, int.MaxValue, ErrorMessage = "Quantity must be at least 1")] int QuantityRequested);
+public record PickupRequestLineItemInput(string InventoryItemId, int QuantityRequested);
 
 public record PickupRequestCreateRequest(
-    [property: Required] string CustomerName,
+    string CustomerName,
     // At least one of CustomerPhone/CustomerEmail is required - checked in ReservationService,
     // since neither field alone is unconditionally required.
     string? CustomerPhone,
     string? CustomerEmail,
     string? Notes,
-    // ValidationFilter only validates this list's own attributes (non-null, non-empty) - it doesn't
-    // recurse into each PickupRequestLineItemInput, so CreateAsync re-checks each line by hand.
-    [property: Required][property: MinLength(1, ErrorMessage = "At least one item is required")] List<PickupRequestLineItemInput> Items);
+    // Only the list itself is checked here (present, non-empty); each line's own quantity is
+    // re-checked in ReservationService, which is also where a line is matched to a real item.
+    List<PickupRequestLineItemInput> Items) : IValidatableRequest
+{
+    public void Validate(ValidationErrors errors)
+    {
+        errors.Required(nameof(CustomerName), CustomerName);
+        errors.NotEmpty(nameof(Items), Items, "At least one item is required");
+    }
+}
 
-public record ReservationStatusUpdateRequest([property: Required] ReservationStatus Status);
+public record ReservationStatusUpdateRequest(ReservationStatus Status) : IValidatableRequest
+{
+    // Status is a non-nullable enum: a missing or unparseable value fails at deserialization, so
+    // by the time it reaches here there is nothing left to check.
+    public void Validate(ValidationErrors errors)
+    {
+    }
+}
 
 public record ReservationCompleteRequest(bool PermanentlyClear);
 

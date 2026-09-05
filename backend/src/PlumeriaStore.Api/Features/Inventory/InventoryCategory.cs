@@ -1,6 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
-
 namespace PlumeriaStore.Api.Features.Inventory;
 
 public enum CategoryKind
@@ -19,14 +16,4 @@ public class InventoryCategory
     public CategoryKind Kind { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Code { get; set; } = string.Empty;
-}
-
-public class InventoryCategoryConfiguration : IEntityTypeConfiguration<InventoryCategory>
-{
-    public void Configure(EntityTypeBuilder<InventoryCategory> builder)
-    {
-        builder.Property(category => category.Name).IsRequired();
-        builder.Property(category => category.Code).IsRequired().HasMaxLength(4);
-        builder.HasIndex(category => new { category.Kind, category.Name }).IsUnique();
-    }
 }

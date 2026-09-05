@@ -1,0 +1,163 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Description: >
+  Plumeria Store API - an ASP.NET Core Minimal API published as a Native AOT binary and run as a
+  Lambda function behind an HTTP API, with DynamoDB for data and S3 for photos.
+
+  Build the artifact this template deploys with:
+      docker build -f backend/Dockerfile --target artifact \
+        --output type=local,dest=backend/publish backend
+
+Parameters:
+  JwtSecret:
+    Type: String
+    NoEcho: true
+    MinLength: 32
+    Description: >
+      Signing key for admin session tokens. At least 32 bytes (HMAC-SHA256); the function refuses
+      to start with anything shorter. Rotating it signs every admin out.
+
+  AdminUsername:
+    Type: String
+    Default: admin
+    Description: >
+      Bootstrap admin username, used only when the table has no admin account yet. After first
+      start the account is owned by the app (Admin -> Account), and this is ignored.
+
+  AdminPassword:
+    Type: String
+    NoEcho: true
+    Description: Bootstrap admin password. Same one-time-only semantics as AdminUsername.
+
+  CorsAllowedOrigins:
+    Type: String
+    Default: http://localhost:5173
+    Description: Comma-separated frontend origins allowed to call the API.
+
+  EmailFromAddress:
+    Type: String
+    Default: ""
+    Description: >
+      Verified SES identity that new-pickup-request notifications are sent from and to. Leave
+      blank to turn notifications off - the function logs that and carries on.
+
+  EmailRegion:
+    Type: String
+    Default: us-west-2
+    Description: Region of the SES identity, which needn't be the region this stack is deployed to.
+
+Conditions:
+  # SES permissions are only attached when there is an identity to send as.
+  NotificationsEnabled: !Not [!Equals [!Ref EmailFromAddress, ""]]
+
+Globals:
+  Function:
+    Timeout: 30
+    # Lambda scales CPU with memory, so this is as much about how fast a request is served as it
+    # is about headroom. A photo passing through the function is the largest thing it holds.
+    MemorySize: 1024
+
+Resources:
+  Table:
+    Type: AWS::DynamoDB::Table
+    # Retained on stack deletion: this holds the shop's whole inventory and request history.
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      # Single table, no secondary indexes - each entity kind is one partition, split by sort key.
+      # See Common/Data/DynamoKeys.cs.
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  UploadsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      # Photos are served through the function's GET /uploads/{filename}, so nothing here is
+      # reachable without going past the API first.
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  Api:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: $default
+      # CORS is answered by the application (App__Cors__AllowedOrigins), which already has to know
+      # the allowed origins - configuring it here as well would be a second place to keep in sync.
+
+  Function:
+    Type: AWS::Serverless::Function
+    Properties:
+      # provided.al2023 runs the executable named `bootstrap` in the archive; there is no .NET
+      # runtime involved, the binary is self-contained machine code.
+      Runtime: provided.al2023
+      Handler: bootstrap
+      # Must match the RUNTIME_ID the artifact was built with (linux-x64 by default, see Dockerfile).
+      Architectures:
+        - x86_64
+      CodeUri: publish/function.zip
+      Environment:
+        Variables:
+          # Double underscore is the ASP.NET Core separator for nested configuration keys.
+          App__Jwt__Secret: !Ref JwtSecret
+          App__Admin__Username: !Ref AdminUsername
+          App__Admin__Password: !Ref AdminPassword
+          App__Cors__AllowedOrigins: !Ref CorsAllowedOrigins
+          App__Dynamo__TableName: !Ref Table
+          App__Storage__BucketName: !Ref UploadsBucket
+          # Overrides the appsettings.json default so the clients follow the stack wherever it is
+          # deployed, rather than pinning the region the file happens to name.
+          App__Aws__Region: !Ref AWS::Region
+          App__Email__Region: !Ref EmailRegion
+          EMAIL_FROM_ADDRESS: !Ref EmailFromAddress
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Table
+        - S3CrudPolicy:
+            BucketName: !Ref UploadsBucket
+        - !If
+          - NotificationsEnabled
+          - Statement:
+              - Effect: Allow
+                Action: ses:SendEmail
+                Resource: "*"
+          - !Ref AWS::NoValue
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            # Every method and path goes to the app, which does its own routing.
+            Path: /{proxy+}
+            Method: ANY
+
+Outputs:
+  ApiUrl:
+    Description: Set this as VITE_API_BASE_URL in frontend/.env
+    Value: !Sub "https://${Api}.execute-api.${AWS::Region}.${AWS::URLSuffix}"
+
+  TableName:
+    Value: !Ref Table
+
+  UploadsBucketName:
+    Value: !Ref UploadsBucket

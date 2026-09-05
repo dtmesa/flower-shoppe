@@ -1,5 +1,5 @@
-using System.IdentityModel.Tokens.Jwt;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.JsonWebTokens;
 using PlumeriaStore.Api.Common.Options;
 using PlumeriaStore.Api.Features.Auth;
 
@@ -18,7 +18,7 @@ public class JwtTokenServiceTests
     {
         var token = _service.GenerateToken("admin");
 
-        var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
+        var jwt = new JsonWebToken(token);
 
         Assert.Equal("admin", jwt.Subject);
         Assert.True(jwt.ValidTo > DateTime.UtcNow);

@@ -6,12 +6,12 @@ namespace PlumeriaStore.Api.Tests.Features.Inventory;
 
 public class CategoryServiceTests : IDisposable
 {
-    private readonly SqliteInMemoryDbContext _fixture = new();
+    private readonly PlumeriaTestContext _context = new();
     private readonly CategoryService _service;
 
     public CategoryServiceTests()
     {
-        _service = new CategoryService(_fixture.Db);
+        _service = _context.NewCategoryService();
     }
 
     [Fact]
@@ -70,5 +70,5 @@ public class CategoryServiceTests : IDisposable
         await Assert.ThrowsAsync<NotFoundException>(() => _service.DeleteAsync(999));
     }
 
-    public void Dispose() => _fixture.Dispose();
+    public void Dispose() => _context.Dispose();
 }

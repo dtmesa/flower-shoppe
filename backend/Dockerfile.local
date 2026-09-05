@@ -1,0 +1,23 @@
+# Local development image: a plain framework-dependent build, so `docker compose up` is quick and
+# doesn't need the Native AOT toolchain. The deployed artifact is built by ./Dockerfile instead.
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+COPY src/PlumeriaStore.Api/PlumeriaStore.Api.csproj src/PlumeriaStore.Api/
+RUN dotnet restore src/PlumeriaStore.Api/PlumeriaStore.Api.csproj
+
+COPY src/PlumeriaStore.Api/ src/PlumeriaStore.Api/
+# PublishAot is on in the csproj for the real deployment; turning it off here keeps this a normal
+# IL publish that the SDK image can produce without clang and a linker.
+RUN dotnet publish src/PlumeriaStore.Api/PlumeriaStore.Api.csproj -c Release -o /app --no-restore -p:PublishAot=false
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+COPY --from=build /app .
+
+EXPOSE 8080
+
+# appsettings.json's "Urls" (loopback-only, correct for local `dotnet run`) otherwise wins over
+# ASPNETCORE_URLS here - passing --urls instead, since command-line args are the one config
+# source with higher precedence than appsettings.json, to bind all interfaces inside the container.
+ENTRYPOINT ["dotnet", "PlumeriaStore.Api.dll", "--urls", "http://+:8080"]

@@ -1,14 +1,25 @@
-using System.ComponentModel.DataAnnotations;
+using PlumeriaStore.Api.Common.Validation;
 
 namespace PlumeriaStore.Api.Features.Inventory;
 
-public record CategoryCreateRequest(
-    [property: Required] CategoryKind Kind,
-    [property: Required] string Name,
-    [property: Required][property: StringLength(4, MinimumLength = 1)] string Code);
+public record CategoryCreateRequest(CategoryKind Kind, string Name, string Code) : IValidatableRequest
+{
+    public void Validate(ValidationErrors errors)
+    {
+        errors.Required(nameof(Name), Name);
+        errors.Required(nameof(Code), Code);
+        errors.MaxLength(nameof(Code), Code, 4);
+    }
+}
 
-public record CategoryUpdateRequest(
-    [property: Required] string Name,
-    [property: Required][property: StringLength(4, MinimumLength = 1)] string Code);
+public record CategoryUpdateRequest(string Name, string Code) : IValidatableRequest
+{
+    public void Validate(ValidationErrors errors)
+    {
+        errors.Required(nameof(Name), Name);
+        errors.Required(nameof(Code), Code);
+        errors.MaxLength(nameof(Code), Code, 4);
+    }
+}
 
 public record CategoryResponse(int Id, CategoryKind Kind, string Name, string Code);

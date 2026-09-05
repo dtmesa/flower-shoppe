@@ -1,14 +1,24 @@
+using PlumeriaStore.Api.Features.Reservations;
+
 namespace PlumeriaStore.Api.Features.Inventory;
 
 public class InventoryService
 {
-    private readonly PlumeriaDbContext _db;
-    private readonly FileStorageService _fileStorageService;
+    private readonly InventoryRepository _items;
+    private readonly CategoryRepository _categories;
+    private readonly ReservationRepository _reservations;
+    private readonly IFileStorage _fileStorage;
 
-    public InventoryService(PlumeriaDbContext db, FileStorageService fileStorageService)
+    public InventoryService(
+        InventoryRepository items,
+        CategoryRepository categories,
+        ReservationRepository reservations,
+        IFileStorage fileStorage)
     {
-        _db = db;
-        _fileStorageService = fileStorageService;
+        _items = items;
+        _categories = categories;
+        _reservations = reservations;
+        _fileStorage = fileStorage;
     }
 
     // Categories are admin-editable (see CategoryService), so the code for each Type/Color/Size
@@ -18,19 +28,11 @@ public class InventoryService
     // from sharing a code, which would make their generated IDs collide - not guarded against yet.
     private async Task<string> GenerateIdAsync(string type, string color, string size)
     {
-        // One round-trip for all three lookups rather than three sequential ones - the category
-        // table is tiny, so fetching the matching rows in a single query and picking them apart
-        // in memory is cheaper than three awaits.
-        var matches = await _db.Categories
-            .Where(category =>
-                (category.Kind == CategoryKind.TYPE && category.Name == type) ||
-                (category.Kind == CategoryKind.COLOR && category.Name == color) ||
-                (category.Kind == CategoryKind.SIZE && category.Name == size))
-            .Select(category => new { category.Kind, category.Code })
-            .ToListAsync();
+        // The whole category partition is a handful of rows, so one read covers all three lookups.
+        var categories = await _categories.FindAllAsync();
 
         string CodeFor(CategoryKind kind, string name, string label) =>
-            matches.FirstOrDefault(match => match.Kind == kind)?.Code
+            categories.FirstOrDefault(category => category.Kind == kind && category.Name == name)?.Code
             ?? throw new BadRequestException($"Unknown {label}: \"{name}\"");
 
         var typeCode = CodeFor(CategoryKind.TYPE, type, "type");
@@ -40,55 +42,20 @@ public class InventoryService
         return $"{typeCode}{colorCode}{sizeCode}";
     }
 
-    /// <summary>
-    /// Units currently held per item by confirmed pickup requests, keyed by item ID. Items with
-    /// nothing on hold are absent from the result rather than present with a zero.
-    /// </summary>
-    private async Task<Dictionary<string, int>> GetReservedQuantitiesAsync(string? itemId = null)
-    {
-        var query = _db.Reservations.Where(line => line.StockReserved && line.InventoryItemId != null);
-
-        if (itemId is not null)
-        {
-            query = query.Where(line => line.InventoryItemId == itemId);
-        }
-
-        return await query
-            .GroupBy(line => line.InventoryItemId!)
-            .Select(group => new { ItemId = group.Key, Reserved = group.Sum(line => line.QuantityRequested) })
-            .ToDictionaryAsync(row => row.ItemId, row => row.Reserved);
-    }
-
     public async Task<List<InventoryItemResponse>> FindAllAsync()
     {
-        var items = await _db.InventoryItems
-            .Include(item => item.Images)
-            .AsNoTracking()
-            .ToListAsync();
-
-        // One grouped query for the whole list rather than a per-item lookup.
-        var reserved = await GetReservedQuantitiesAsync();
-
-        return items.Select(item => ToResponse(item, reserved.GetValueOrDefault(item.Id))).ToList();
+        var items = await _items.FindAllAsync();
+        return items.Select(ToResponse).ToList();
     }
 
     public async Task<InventoryItemResponse> FindByIdAsync(string id)
     {
-        var item = await GetItemOrThrowAsync(id);
-        var reserved = await GetReservedQuantitiesAsync(id);
-        return ToResponse(item, reserved.GetValueOrDefault(id));
+        return ToResponse(await GetItemOrThrowAsync(id));
     }
 
     public async Task<InventoryItemResponse> CreateAsync(InventoryItemCreateRequest request)
     {
         var id = await GenerateIdAsync(request.Type, request.Color, request.Size);
-
-        if (await _db.InventoryItems.AnyAsync(i => i.Id == id))
-        {
-            throw new BadRequestException(
-                $"An item with type \"{request.Type}\", color \"{request.Color}\", and size \"{request.Size}\" " +
-                $"already exists (ID: {id}). Increase its quantity instead of creating a duplicate.");
-        }
 
         var item = new InventoryItem
         {
@@ -103,17 +70,22 @@ public class InventoryService
             UpdatedAt = DateTime.UtcNow,
         };
 
-        _db.InventoryItems.Add(item);
-        await _db.SaveChangesAsync();
+        // The ID encodes type+color+size, so "this key is already taken" is exactly the duplicate
+        // rule - let the conditional write enforce it instead of reading first and hoping.
+        if (!await _items.TryCreateAsync(item))
+        {
+            throw new BadRequestException(
+                $"An item with type \"{request.Type}\", color \"{request.Color}\", and size \"{request.Size}\" " +
+                $"already exists (ID: {id}). Increase its quantity instead of creating a duplicate.");
+        }
 
-        // A brand-new item can't have holds against it yet.
-        return ToResponse(item, 0);
+        return ToResponse(item);
     }
 
     public async Task<InventoryItemResponse> UpdateAsync(string id, InventoryItemUpdateRequest request)
     {
         var item = await GetItemOrThrowAsync(id);
-        var reserved = (await GetReservedQuantitiesAsync(id)).GetValueOrDefault(id);
+        var reserved = item.QuantityReserved;
 
         // Dropping the total below what's already held would leave the item owing stock it
         // doesn't have; the admin has to release those requests first.
@@ -129,30 +101,34 @@ public class InventoryService
         item.Description = request.Description;
         item.UpdatedAt = DateTime.UtcNow;
 
-        await _db.SaveChangesAsync();
-        return ToResponse(item, reserved);
+        await _items.SaveAsync(item);
+        return ToResponse(item);
     }
 
     public async Task DeleteAsync(string id)
     {
         var item = await GetItemOrThrowAsync(id);
 
+        await _items.DeleteAsync(id);
+
+        // Past requests keep their line items and snapshots but stop pointing at an item that no
+        // longer exists - the ON DELETE SET NULL the relational schema used to do on its own.
+        await _reservations.ClearInventoryItemReferencesAsync(id);
+
         foreach (var image in item.Images)
         {
-            _fileStorageService.Delete(image.Filename);
+            await _fileStorage.DeleteAsync(image.Filename);
         }
-
-        _db.InventoryItems.Remove(item);
-        await _db.SaveChangesAsync();
     }
 
     public async Task<InventoryItemResponse> AddImageAsync(string itemId, IFormFile file)
     {
         var item = await GetItemOrThrowAsync(itemId);
-        var filename = await _fileStorageService.StoreAsync(file);
+        var filename = await _fileStorage.StoreAsync(file);
 
         item.Images.Add(new InventoryImage
         {
+            Id = item.NextImageId++,
             Filename = filename,
             SortOrder = item.Images.Count,
             // The first photo on an item has nothing to be chosen over, so it's the thumbnail by
@@ -160,8 +136,8 @@ public class InventoryService
             IsPrimary = item.Images.Count == 0,
         });
 
-        await _db.SaveChangesAsync();
-        return await ToResponseWithReservedAsync(item);
+        await _items.SaveAsync(item);
+        return ToResponse(item);
     }
 
     public async Task<InventoryItemResponse> DeleteImageAsync(string itemId, int imageId)
@@ -172,7 +148,6 @@ public class InventoryService
 
         var wasPrimary = image.IsPrimary;
         item.Images.Remove(image);
-        _db.InventoryImages.Remove(image);
 
         // Deleting the primary photo shouldn't leave the item with photos but no thumbnail -
         // hand primary status to whichever photo now sorts first, if any are left.
@@ -185,10 +160,10 @@ public class InventoryService
             }
         }
 
-        await _db.SaveChangesAsync();
-        _fileStorageService.Delete(image.Filename);
+        await _items.SaveAsync(item);
+        await _fileStorage.DeleteAsync(image.Filename);
 
-        return await ToResponseWithReservedAsync(item);
+        return ToResponse(item);
     }
 
     public async Task<InventoryItemResponse> SetPrimaryImageAsync(string itemId, int imageId)
@@ -202,27 +177,17 @@ public class InventoryService
             img.IsPrimary = img.Id == image.Id;
         }
 
-        await _db.SaveChangesAsync();
-        return await ToResponseWithReservedAsync(item);
+        await _items.SaveAsync(item);
+        return ToResponse(item);
     }
 
     private async Task<InventoryItem> GetItemOrThrowAsync(string id)
     {
-        var item = await _db.InventoryItems
-            .Include(i => i.Images)
-            .FirstOrDefaultAsync(i => i.Id == id);
-
-        return item ?? throw new NotFoundException($"Inventory item not found: {id}");
+        return await _items.FindByIdAsync(id)
+            ?? throw new NotFoundException($"Inventory item not found: {id}");
     }
 
-    /// <summary>Convenience for call sites that have an item but haven't looked up its holds.</summary>
-    private async Task<InventoryItemResponse> ToResponseWithReservedAsync(InventoryItem item)
-    {
-        var reserved = await GetReservedQuantitiesAsync(item.Id);
-        return ToResponse(item, reserved.GetValueOrDefault(item.Id));
-    }
-
-    private static InventoryItemResponse ToResponse(InventoryItem item, int reserved)
+    private static InventoryItemResponse ToResponse(InventoryItem item)
     {
         var images = item.Images
             .OrderBy(image => image.SortOrder)
@@ -236,9 +201,9 @@ public class InventoryService
             item.Size,
             item.Price,
             item.QuantityTotal,
-            reserved,
+            item.QuantityReserved,
             // Never negative, even if an admin somehow lowered the total below the held amount.
-            Math.Max(0, item.QuantityTotal - reserved),
+            Math.Max(0, item.QuantityTotal - item.QuantityReserved),
             item.Description,
             images,
             item.CreatedAt,

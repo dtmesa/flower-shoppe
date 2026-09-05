@@ -1,7 +1,6 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using System.Text;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using PlumeriaStore.Api.Common.Options;
 
@@ -9,25 +8,28 @@ namespace PlumeriaStore.Api.Features.Auth;
 
 public class JwtTokenService
 {
-    private readonly SymmetricSecurityKey _key;
+    private readonly SigningCredentials _credentials;
     private readonly int _expirationMinutes;
 
     public JwtTokenService(IOptions<JwtOptions> options)
     {
-        _key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.Value.Secret));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.Value.Secret));
+        _credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         _expirationMinutes = options.Value.ExpirationMinutes;
     }
 
+    // JsonWebTokenHandler rather than the older JwtSecurityTokenHandler: it's the handler
+    // JwtBearer already validates with, and it doesn't lean on the reflection-based claim mapping
+    // that Native AOT would trim away.
     public string GenerateToken(string username)
     {
-        var claims = new[] { new Claim(JwtRegisteredClaimNames.Sub, username) };
-        var credentials = new SigningCredentials(_key, SecurityAlgorithms.HmacSha256);
+        var descriptor = new SecurityTokenDescriptor
+        {
+            Claims = new Dictionary<string, object> { [JwtRegisteredClaimNames.Sub] = username },
+            Expires = DateTime.UtcNow.AddMinutes(_expirationMinutes),
+            SigningCredentials = _credentials,
+        };
 
-        var token = new JwtSecurityToken(
-            claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(_expirationMinutes),
-            signingCredentials: credentials);
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        return new JsonWebTokenHandler().CreateToken(descriptor);
     }
 }
