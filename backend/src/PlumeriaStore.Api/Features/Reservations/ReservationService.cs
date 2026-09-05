@@ -120,7 +120,7 @@ public partial class ReservationService
     {
         if (status == ReservationStatus.COMPLETED)
         {
-            throw new BadRequestException("Use the complete endpoint to mark a pickup request completed.");
+            throw new BadRequestException("Use the complete endpoint to mark a pickup request completed");
         }
 
         var pickupRequest = await GetRequestOrThrowAsync(id);

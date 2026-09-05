@@ -93,7 +93,7 @@ public class InventoryService
         {
             throw new BadRequestException(
                 $"{reserved} of this item {(reserved == 1 ? "is" : "are")} reserved by confirmed pickup requests, " +
-                $"so the total can't be set below {reserved}.");
+                $"so the total can't be set below {reserved}");
         }
 
         item.Price = request.Price;

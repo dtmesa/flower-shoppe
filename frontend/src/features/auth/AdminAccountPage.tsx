@@ -60,7 +60,7 @@ export function AdminAccountPage() {
     setSuccess(null);
 
     if (!currentPassword) {
-      setError("Current password is required.");
+      setError("Current password is required");
       setInvalidFields(new Set(["currentPassword"]));
       return;
     }
@@ -72,7 +72,7 @@ export function AdminAccountPage() {
     const changingPassword = Boolean(newPassword || confirmPassword);
 
     if (!newUsernameTrimmed && !changingPassword) {
-      setError("Enter a new username or a new password.");
+      setError("Enter a new username or a new password");
       setInvalidFields(new Set(["newUsername", "newPassword"]));
       return;
     }
@@ -80,13 +80,13 @@ export function AdminAccountPage() {
     if (changingPassword) {
       // One of the pair filled but not the other - point at whichever is still empty.
       if (!newPassword || !confirmPassword) {
-        setError("Enter the new password twice to confirm it.");
+        setError("Enter the new password twice to confirm it");
         setInvalidFields(new Set([newPassword ? "confirmPassword" : "newPassword"]));
         return;
       }
 
       if (newPassword !== confirmPassword) {
-        setError("New password and confirmation do not match.");
+        setError("New password and confirmation do not match");
         setInvalidFields(new Set(["newPassword", "confirmPassword"]));
         return;
       }
@@ -95,7 +95,7 @@ export function AdminAccountPage() {
     // The API always wants a username; when only the password is changing, that's the current one.
     const usernameToSend = newUsernameTrimmed || username;
     if (!usernameToSend) {
-      setError("Could not determine the current username - try reloading the page.");
+      setError("Could not determine the current username - try reloading the page");
       return;
     }
 
@@ -111,7 +111,7 @@ export function AdminAccountPage() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      setSuccess("Credentials updated.");
+      setSuccess("Credentials updated");
     } catch (err) {
       setError(extractErrorMessage(err));
     } finally {

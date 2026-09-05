@@ -29,7 +29,7 @@ export function LoginPage() {
     setError(null);
 
     if (!username.trim() || !password) {
-      setError("Enter your username and password.");
+      setError("Enter your username and password");
       shakeFields(
         username.trim() ? null : usernameInputRef.current,
         password ? null : passwordInputRef.current,
