@@ -1,0 +1,22 @@
+{
+  // Deploys the built frontend as a static-assets Worker. This sits at the repo root rather than
+  // in frontend/ because Cloudflare clones and runs from the root, and the repo has no root
+  // package.json for it to infer anything from.
+  //
+  // The name has to keep matching the existing Worker - it's what
+  // flower-shoppe.iridebears.workers.dev resolves to. Renaming it here would leave that Worker
+  // untouched and publish a second one alongside it.
+  "name": "flower-shoppe",
+  "compatibility_date": "2026-09-03",
+
+  // No "main": there is no Worker script, only the Vite build output. Cloudflare serves the
+  // directory directly.
+  "assets": {
+    "directory": "./frontend/dist",
+
+    // The app routes with BrowserRouter ("/admin/login", "/admin/inventory", ...), so paths that
+    // don't match a built file have to fall back to index.html and let the router resolve them.
+    // Without this, opening or refreshing any route other than "/" returns a 404.
+    "not_found_handling": "single-page-application"
+  }
+}
