@@ -109,9 +109,16 @@
   --color-form-error-bg: #fbeae7;
   --color-form-error-text: var(--color-danger);
 
-  /* Error banner variant that reserves its own height and fades in place. */
-  --color-form-error-reserved-bg: #f0b3d2;
-  --color-form-error-reserved-text: #6b0f42;
+  /* Error banner variant answering a form submission - see .form-error-slot--prominent. */
+  --color-form-error-prominent-bg: #f0b3d2;
+  --color-form-error-prominent-text: #6b0f42;
+
+  /* The same banner reporting success instead - green counterparts of the two pairs above,
+     matched to them in lightness so the two read as one component in two moods. */
+  --color-form-success-bg: #e7fbee;
+  --color-form-success-text: var(--color-success);
+  --color-form-success-prominent-bg: #b3f0c9;
+  --color-form-success-prominent-text: #0f4a2b;
 
   /* Error text shown directly on the open page canvas rather than in a banner.
      EXPERIMENT: canvas is now white, so this is the plain danger color. */
@@ -224,8 +231,12 @@
   --color-danger-btn-text: #ff7a63;
 
   --color-form-error-bg: #4a2c26;
-  --color-form-error-reserved-bg: #4a1626;
-  --color-form-error-reserved-text: #f2a8c2;
+  --color-form-error-prominent-bg: #4a1626;
+  --color-form-error-prominent-text: #f2a8c2;
+
+  --color-form-success-bg: #264a2c;
+  --color-form-success-prominent-bg: #164a2b;
+  --color-form-success-prominent-text: #a8f2c2;
 
   /* Row Edit falls back to the plain secondary-button look here; row Delete keeps its own
      burgundy so it stays distinct from the generic orange-red .btn-danger. */

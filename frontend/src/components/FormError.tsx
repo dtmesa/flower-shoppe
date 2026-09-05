@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
-import { TriangleAlert } from "lucide-react";
+import { Check, TriangleAlert } from "lucide-react";
 
-/** How long a validation/API error stays on screen before fading out. Pairs with the
- *  `.form-error--reserved` opacity transition in index.css. */
+/** How long a message stays on screen before fading out. */
 const ERROR_DISMISS_MS = 5000;
 
+/** Keep in step with the `.form-error-slot` transition in components.css. */
+const SLIDE_MS = 500;
+
 /**
- * Error state that clears itself after a delay.
+ * Message state that clears itself after a delay. Named for its first use, but it drives the
+ * success banner too - both come and go the same way.
  *
  * Returns a stable setter, so it can be called from event handlers without re-triggering the
  * timer effect on every render. Setting the same message twice in a row still restarts the
@@ -31,51 +34,68 @@ export function useDismissingError() {
   return [state.message, setError] as const;
 }
 
-interface FormErrorProps {
+interface FormMessageProps {
   message: string | null;
   /**
-   * Reserves the message's height even while empty, so showing/hiding it fades in place instead
-   * of shifting whatever follows it. Leave off for errors stacked above a form, where a plain
-   * mount/unmount is fine.
+   * Stronger colouring, for the message that answers a form submission - as opposed to one
+   * reporting a smaller action that happens to sit on the same page.
    */
-  reserveSpace?: boolean;
-  /** Tucks the reserved box up closer to the preceding control (used inside dense modals). */
-  compact?: boolean;
-  /** Trims the reserved box's margin on both sides slightly, rather than just above. */
-  tight?: boolean;
+  prominent?: boolean;
 }
 
 /**
- * The app's validation/API error banner. Two shapes:
- *  - default: renders only when there's a message (used above forms)
- *  - reserveSpace: always mounted, fades opacity (used below a submit button, where a
- *    mount/unmount would visibly push the content underneath it)
+ * The app's inline message banner, in a failure or a success colouring.
+ *
+ * It slides open and pushes whatever follows it down, rather than living in a permanently
+ * reserved box that reads as a blank gap whenever there is no message. The height is animated
+ * with a 0fr/1fr grid row so it settles at whatever the message actually needs, however many
+ * lines that takes - there is no fixed height for the text to be trimmed to.
+ *
+ * The CSS still calls this a "form error" throughout; the class names predate the success
+ * variant and are load-bearing for a good deal of per-location spacing, so they were left alone.
  */
-export function FormError({ message, reserveSpace, compact, tight }: FormErrorProps) {
-  if (!reserveSpace) {
-    if (!message) return null;
-    return (
-      <p className="form-error">
-        <TriangleAlert size={16} strokeWidth={2} aria-hidden="true" />
-        <span className="form-error-text">{message}</span>
-      </p>
-    );
-  }
+function FormMessage({ message, prominent, tone }: FormMessageProps & { tone: "error" | "success" }) {
+  // The text outlives `message` by one slide, so the box still has something in it on the way
+  // closed - then it goes, rather than lingering in the collapsed box where a screen reader
+  // would still find a long-dismissed message.
+  const [shownText, setShownText] = useState(message);
+
+  useEffect(() => {
+    if (message) {
+      setShownText(message);
+      return;
+    }
+    const timer = setTimeout(() => setShownText(null), SLIDE_MS);
+    return () => clearTimeout(timer);
+  }, [message]);
+
+  const Icon = tone === "success" ? Check : TriangleAlert;
 
   const className = [
-    "form-error",
-    "form-error--reserved",
-    compact ? "form-error--compact" : null,
-    tight ? "form-error--tight" : null,
-    message ? "form-error--visible" : null,
+    "form-error-slot",
+    message ? "form-error-slot--open" : null,
+    prominent ? "form-error-slot--prominent" : null,
+    tone === "success" ? "form-error-slot--success" : null,
   ]
     .filter(Boolean)
     .join(" ");
 
   return (
-    <p className={className}>
-      <TriangleAlert size={16} strokeWidth={2} aria-hidden="true" />
-      <span className="form-error-text">{message}</span>
-    </p>
+    <div className={className} aria-live="polite">
+      <div className="form-error-slot-inner">
+        <p className="form-error">
+          <Icon size={19} strokeWidth={2} aria-hidden="true" />
+          <span className="form-error-text">{shownText}</span>
+        </p>
+      </div>
+    </div>
   );
+}
+
+export function FormError(props: FormMessageProps) {
+  return <FormMessage {...props} tone="error" />;
+}
+
+export function FormSuccess(props: FormMessageProps) {
+  return <FormMessage {...props} tone="success" />;
 }

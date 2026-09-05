@@ -1,7 +1,13 @@
 import { useRef, useState } from "react";
 import { Flower, Plus, X } from "lucide-react";
 import type { InventoryItem } from "../types";
-import { deleteInventoryImage, setPrimaryInventoryImage, uploadInventoryImage } from "../inventoryApi";
+import {
+  MAX_IMAGE_UPLOAD_BYTES,
+  MAX_IMAGE_UPLOAD_MESSAGE,
+  deleteInventoryImage,
+  setPrimaryInventoryImage,
+  uploadInventoryImage,
+} from "../inventoryApi";
 import { FormError, useDismissingError } from "../../../components/FormError";
 import { extractErrorMessage, uploadUrl } from "../../../lib/apiClient";
 
@@ -19,7 +25,17 @@ export function ImageManager({ item, onItemUpdated }: ImageManagerProps) {
 
   async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
+    // Cleared up front rather than in the `finally` below: the input fires no change event when
+    // the same file is picked twice running, which is exactly what an admin does after being told
+    // the one they chose is too big.
+    if (fileInputRef.current) fileInputRef.current.value = "";
     if (!file) return;
+
+    if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
+      setError(MAX_IMAGE_UPLOAD_MESSAGE);
+      return;
+    }
+
     setError(null);
     setUploading(true);
     try {
@@ -29,7 +45,6 @@ export function ImageManager({ item, onItemUpdated }: ImageManagerProps) {
       setError(extractErrorMessage(err));
     } finally {
       setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
 
@@ -82,7 +97,7 @@ export function ImageManager({ item, onItemUpdated }: ImageManagerProps) {
           hidden
         />
       </div>
-      <FormError message={error} />
+      <FormError message={error} prominent />
       <div className="image-manager-grid">
         {item.images.map((image) => {
           const isEffectivePrimary = image.isPrimary || item.images.length === 1;

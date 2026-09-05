@@ -51,7 +51,7 @@ export function LoginPage() {
   return (
     <div className="page page--narrow">
       <h1>Admin Login</h1>
-      <form className="form" onSubmit={handleSubmit} noValidate>
+      <form className="form form--medium-labels" onSubmit={handleSubmit} noValidate>
         <label>
           Username
           <input
@@ -85,7 +85,7 @@ export function LoginPage() {
         <button type="submit" className="btn btn-primary" disabled={submitting}>
           {submitting ? "Logging in..." : "Login"}
         </button>
-        <FormError message={error} reserveSpace tight />
+        <FormError message={error} prominent />
       </form>
     </div>
   );

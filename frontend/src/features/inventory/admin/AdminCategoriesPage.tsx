@@ -230,7 +230,7 @@ function CategorySection({ kind, categories, onChanged }: CategorySectionProps) 
           <CirclePlus size={28} strokeWidth={2} aria-hidden="true" />
         </button>
       </form>
-      <FormError message={error} reserveSpace />
+      <FormError message={error} prominent />
       {confirmDialog}
     </div>
   );

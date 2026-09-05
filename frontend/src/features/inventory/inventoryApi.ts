@@ -5,6 +5,22 @@ import type { InventoryItem, InventoryItemCreateInput, InventoryItemUpdateInput 
 const INVENTORY_KEY = "/api/inventory";
 
 /**
+ * Largest photo the API accepts, mirroring `App:Storage:MaxSizeBytes` in the backend's
+ * appsettings.json.
+ *
+ * The server is still the one enforcing this; checking here only changes where the admin finds
+ * out. It has to, because the API runs as a Lambda function: a multipart upload reaches it
+ * base64-encoded, and much past this size the request trips Lambda's payload limit and is
+ * rejected by API Gateway before the API can answer with its own message - leaving the admin
+ * with a bare "Request failed with status code 413". Refusing the file here means one clear
+ * message either way, and no pointless multi-megabyte upload.
+ */
+export const MAX_IMAGE_UPLOAD_BYTES = 4 * 1024 * 1024;
+
+/** Worded to match the API's own rejection, so the limit reads the same wherever it's hit. */
+export const MAX_IMAGE_UPLOAD_MESSAGE = `Image exceeds maximum size of ${MAX_IMAGE_UPLOAD_BYTES / 1024 / 1024}MB`;
+
+/**
  * @param enabled pass false to skip the request entirely (SWR treats a null key as "don't
  *   fetch"). Used by the cart, which is mounted app-wide but has nothing to show on admin
  *   routes and shouldn't pull the whole catalog there.
