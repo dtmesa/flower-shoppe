@@ -413,9 +413,9 @@
 .page {
   flex: 1;
   width: 100%;
-  max-width: 1100px;
+  max-width: var(--page-max);
   margin: 0 auto;
-  padding: 2rem 1.5rem 4rem;
+  padding: 2rem var(--page-gutter) 4rem;
 }
 
 .page--narrow {
@@ -449,7 +449,16 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  padding: 3rem 1.5rem 0.75rem;
+  /* Horizontal: keep the text aligned with the catalog underneath it. .page is a --page-max
+     column centred in the viewport, but .banner is full-bleed, so a fixed inset drifts further
+     out of alignment the wider the screen gets. max() holds the plain gutter while the column
+     still fills the viewport, then tracks the column once it starts centring. */
+  padding-inline: max(var(--page-gutter), calc((100% - var(--page-max)) / 2 + var(--page-gutter)));
+  /* Vertical: the banner image is a locked 2.84:1, so its height follows its width - and
+     percentage padding resolves against width too. Percentages therefore hold the text inset
+     proportional at every screen size, with no breakpoint. The top value is slack while the text
+     is shorter than the overlay (justify-content is flex-end); it only engages on overflow. */
+  padding-block: 6% 1%;
   background: rgba(0, 0, 0, 0.45);
 }
 
@@ -485,11 +494,12 @@
 .banner-overlay h1 {
   color: #fff;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
-  margin-bottom: 0.075em;
+  margin-bottom: 0.05em;
+  font-size: 2rem;
 }
 
 .banner-overlay p {
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   font-weight: 400;
   color: #fff;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
@@ -564,12 +574,12 @@
   background: var(--color-surface);
   border-radius: var(--radius);
   padding: 1.25rem;
-  box-shadow: var(--shadow-soft);
   position: sticky;
   top: 5.5rem;
 }
 
 .filter-section h3 {
+  transition: margin-bottom 250ms ease-in-out;
   font-family: var(--font-body);
   font-size: 0.9rem;
   font-weight: 600;
@@ -580,6 +590,93 @@
 
 .filter-section:last-child h3 {
   margin-bottom: 0.35rem;
+}
+
+/* The heading is a button now, so strip the UA button chrome and inherit the h3 typography set
+   above rather than restating it. */
+.filter-section-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* The origin is pinned left so the label grows rightward into the gap next to the chevron rather
+   than creeping past the panel's padding. (No display declaration needed - as a flex item the span
+   is already blockified, so the transform applies.) */
+.filter-section-title {
+  transform-origin: left center;
+  transition: transform 0.1s ease;
+}
+
+/* Matches the option labels below it (.filter-checkbox-label) rather than the larger 1.03 the
+   standalone controls use - the two sit adjacent, so a heading that grew more than its own
+   options read as inconsistent. */
+.filter-section-toggle:hover .filter-section-title {
+  transform: scale(1.02);
+}
+
+/* Same rotation and timing as the pickup-request status dropdown (.status-dropdown-chevron). */
+.filter-section-chevron {
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+
+.filter-section-toggle[aria-expanded="true"] .filter-section-chevron {
+  transform: rotate(180deg);
+}
+
+/* Animating 0fr <-> 1fr collapses the body without measuring its height in JS. The inner wrapper
+   is load-bearing: the grid row can only shrink if its content is free to be clipped.
+
+   The two directions are timed like the form message slot (.form-error-slot): each state carries
+   the transition used to arrive at it, so opening and closing can differ. */
+.filter-section-body {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  /* Opening: the box makes room quickly (250ms) and the options fade in gently over twice that
+     (500ms), so the fade reads on its own rather than being lost inside the movement. */
+  transition: grid-template-rows 250ms ease-in-out, opacity 500ms ease-in-out;
+}
+
+.filter-section--collapsed .filter-section-body {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  /* Closing: the mirror image - the options go quickly (250ms) while the box takes its time
+     collapsing under them (500ms), so they have cleared before the gap finishes closing. */
+  transition: grid-template-rows 500ms ease-in-out, opacity 250ms ease-in-out;
+}
+
+/* min-height: 0 is load-bearing alongside the overflow: a grid item's automatic minimum size
+   otherwise floors the row at its min-content height, and the group stops halfway shut. */
+.filter-section-body-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* The trailing margin on the last checkbox is dead space once the group is shut. Timed with the
+   box either way, or it snaps while the rest is still easing. */
+.filter-section--collapsed h3 {
+  margin-bottom: 0;
+  transition: margin-bottom 500ms ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filter-section-chevron,
+  .filter-section-body,
+  .filter-section-title {
+    transition: none;
+  }
 }
 
 .filter-checkbox {
@@ -857,7 +954,6 @@ input[type="radio"]:focus-visible {
   overflow: hidden;
   cursor: pointer;
   padding: 0;
-  box-shadow: var(--shadow-soft);
   transition: transform 0.15s ease, background 0.15s ease;
 }
 
@@ -2092,6 +2188,10 @@ tbody tr:last-child td {
 }
 
 @media (max-width: 640px) {
+  :root {
+    --page-gutter: 1rem;
+  }
+
   .detail-layout {
     grid-template-columns: 1fr;
   }
@@ -2101,7 +2201,7 @@ tbody tr:last-child td {
   }
 
   .page {
-    padding: 1.5rem 1rem 3rem;
+    padding: 1.5rem var(--page-gutter) 3rem;
   }
 
   .catalog-layout {
@@ -2114,8 +2214,12 @@ tbody tr:last-child td {
     position: static;
   }
 
-  .banner-overlay {
-    padding: 1.25rem 1rem 0.5rem;
+  /* .catalog-layout keeps align-items: flex-start so the sidebar and grid top-align while they
+     sit side by side, but once the layout stacks that also stops them stretching to the full
+     width. The sidebar opts back in above; the grid needs the same, or it shrink-wraps its cards
+     and leaves dead space against the right gutter. */
+  .catalog-content {
+    width: 100%;
   }
 
   .banner-overlay h1 {

@@ -86,7 +86,7 @@ export function CatalogPage() {
       <img src={bannerImage} alt="" className="banner-image" />
       <div className="banner-overlay">
         <h1>Plumeria</h1>
-        <p>Reserve your favorites for local pickup in Orange County</p>
+        <p>Reserve your favorites for local pickup</p>
       </div>
     </div>
     <div className="page">

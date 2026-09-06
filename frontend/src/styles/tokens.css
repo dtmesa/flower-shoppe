@@ -2,6 +2,13 @@
   --font-heading: "Bodoni Moda", "Georgia", "Times New Roman", serif;
   --font-body: "Montserrat", "Segoe UI", system-ui, -apple-system, sans-serif;
 
+  /* ---- Layout ----------------------------------------------------------------------------
+     The content column and its gutter. Shared so that full-bleed elements (the catalog banner)
+     can line their text up with the column instead of the viewport edge; the gutter narrows at
+     the 640px breakpoint in components.css. */
+  --page-max: 1100px;
+  --page-gutter: 1.5rem;
+
   /* ---- Palette ---------------------------------------------------------------------------
      Raw brand colors. Everything below is expressed in terms of these or of the semantic
      tokens further down - component rules should never hardcode a hex. */

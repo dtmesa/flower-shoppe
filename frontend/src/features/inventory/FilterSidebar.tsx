@@ -1,5 +1,6 @@
-import type { CSSProperties } from "react";
-import { Check } from "lucide-react";
+import { useId, useState } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { Check, ChevronDown } from "lucide-react";
 import { useCategories } from "./categoriesApi";
 import { formatWholeDollars } from "../../lib/format";
 
@@ -18,6 +19,41 @@ function FilterCheckboxOption({ label, checked, onChange }: FilterCheckboxOption
       </span>
       <span className="filter-checkbox-label">{label}</span>
     </label>
+  );
+}
+
+interface FilterSectionProps {
+  title: string;
+  children: ReactNode;
+}
+
+/* One collapsible filter group. The heading wraps the button rather than the other way round: a
+   <button> may only contain phrasing content, so an <h3> nested inside one is invalid markup and
+   costs the heading its place in the screen-reader outline. */
+function FilterSection({ title, children }: FilterSectionProps) {
+  const [open, setOpen] = useState(true);
+  const bodyId = useId();
+
+  return (
+    <div className={`filter-section${open ? "" : " filter-section--collapsed"}`}>
+      <h3>
+        <button
+          type="button"
+          className="filter-section-toggle"
+          onClick={() => setOpen((wasOpen) => !wasOpen)}
+          aria-expanded={open}
+          aria-controls={bodyId}
+        >
+          {/* Wrapped so hover scales the label alone - scaling the whole button drags the chevron
+              (and its open/closed rotation) with it, the same split the status dropdown uses. */}
+          <span className="filter-section-title">{title}</span>
+          <ChevronDown size={14} strokeWidth={2.5} aria-hidden="true" className="filter-section-chevron" />
+        </button>
+      </h3>
+      <div className="filter-section-body" id={bodyId}>
+        <div className="filter-section-body-inner">{children}</div>
+      </div>
+    </div>
   );
 }
 
@@ -48,8 +84,7 @@ export function FilterSidebar({
 
   return (
     <aside className="filter-sidebar">
-      <div className="filter-section">
-        <h3>Type</h3>
+      <FilterSection title="Type">
         {types.map((type) => (
           <FilterCheckboxOption
             key={type.id}
@@ -58,10 +93,9 @@ export function FilterSidebar({
             onChange={() => onToggleType(type.name)}
           />
         ))}
-      </div>
+      </FilterSection>
 
-      <div className="filter-section">
-        <h3>Color</h3>
+      <FilterSection title="Color">
         {colors.map((color) => (
           <FilterCheckboxOption
             key={color.id}
@@ -70,10 +104,9 @@ export function FilterSidebar({
             onChange={() => onToggleColor(color.name)}
           />
         ))}
-      </div>
+      </FilterSection>
 
-      <div className="filter-section">
-        <h3>Size</h3>
+      <FilterSection title="Size">
         {sizes.map((size) => (
           <FilterCheckboxOption
             key={size.id}
@@ -82,10 +115,9 @@ export function FilterSidebar({
             onChange={() => onToggleSize(size.name)}
           />
         ))}
-      </div>
+      </FilterSection>
 
-      <div className="filter-section">
-        <h3>Max Price</h3>
+      <FilterSection title="Max Price">
         <input
           type="range"
           min={0}
@@ -103,7 +135,7 @@ export function FilterSidebar({
             {priceLimit >= priceCeiling ? <span className="filter-slider-infinity">∞</span> : formatWholeDollars(priceLimit)}
           </span>
         </div>
-      </div>
+      </FilterSection>
     </aside>
   );
 }
