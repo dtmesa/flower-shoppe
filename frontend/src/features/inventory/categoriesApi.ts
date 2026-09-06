@@ -12,9 +12,12 @@ export interface Category {
 
 const CATEGORIES_KEY = "/api/categories";
 
+/** Stable empty array for the not-yet-loaded case - see NO_ITEMS in inventoryApi.ts. */
+const NO_CATEGORIES: Category[] = [];
+
 export function useCategories() {
   const { data, error, isLoading, mutate } = useSWR<Category[]>(CATEGORIES_KEY, fetcher);
-  const categories = data ?? [];
+  const categories = data ?? NO_CATEGORIES;
 
   return {
     categories,

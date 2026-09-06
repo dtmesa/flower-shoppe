@@ -4,9 +4,12 @@ import type { PickupRequest, PickupRequestInput, ReservationStatus } from "./typ
 
 const RESERVATIONS_KEY = "/api/reservations";
 
+/** Stable empty array for the not-yet-loaded case - see NO_ITEMS in inventoryApi.ts. */
+const NO_RESERVATIONS: PickupRequest[] = [];
+
 export function useReservations() {
   const { data, error, isLoading, mutate } = useSWR<PickupRequest[]>(RESERVATIONS_KEY, fetcher);
-  return { reservations: data ?? [], error, isLoading, refresh: mutate };
+  return { reservations: data ?? NO_RESERVATIONS, error, isLoading, refresh: mutate };
 }
 
 export async function createPickupRequest(input: PickupRequestInput): Promise<PickupRequest> {

@@ -4,6 +4,11 @@ import type { InventoryItem, InventoryItemCreateInput, InventoryItemUpdateInput 
 
 const INVENTORY_KEY = "/api/inventory";
 
+/* A shared empty array for the not-yet-loaded case. A `?? []` literal here would hand back a new
+   array on every render while the request is in flight, and callers that memo off it - or feed it
+   to an effect - would see a fresh identity each time and never settle. */
+const NO_ITEMS: InventoryItem[] = [];
+
 /**
  * Largest photo the API accepts, mirroring `App:Storage:MaxSizeBytes` in the backend's
  * appsettings.json.
@@ -30,7 +35,7 @@ export function useInventory(enabled = true) {
     enabled ? INVENTORY_KEY : null,
     fetcher,
   );
-  return { items: data ?? [], error, isLoading, refresh: mutate };
+  return { items: data ?? NO_ITEMS, error, isLoading, refresh: mutate };
 }
 
 export async function createInventoryItem(input: InventoryItemCreateInput): Promise<InventoryItem> {
