@@ -31,7 +31,7 @@ interface FilterSectionProps {
    <button> may only contain phrasing content, so an <h3> nested inside one is invalid markup and
    costs the heading its place in the screen-reader outline. */
 function FilterSection({ title, children }: FilterSectionProps) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const bodyId = useId();
 
   return (
